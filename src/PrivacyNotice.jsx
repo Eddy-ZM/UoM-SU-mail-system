@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import universityLogo from "./assets/university-of-manchester-logo.png?inline";
 
 const MICROSOFT_PRIVACY_URL = "https://privacy.microsoft.com/en-gb/privacystatement";
 const MICROSOFT_FORMS_PRIVACY_URL = "https://support.microsoft.com/en-us/forms/security-and-privacy-in-microsoft-forms";
@@ -42,16 +43,18 @@ export function PrivacyNotice() {
     <div className="policy-page">
       <header className="policy-masthead">
         <div className="policy-masthead-inner">
-          <a className="policy-brand" href="/" aria-label="Return to the mail system">
+          <div className="policy-brand">
             <img
-              src="https://www.library.manchester.ac.uk/assets/images/design/logo-university-of-manchester.png"
+              src={universityLogo}
               alt="The University of Manchester"
+              loading="eager"
+              decoding="sync"
+              fetchPriority="high"
             />
             <span><strong>Department of Chemistry</strong><br />Student Representatives</span>
-          </a>
-          <div className="policy-header-actions">
+          </div>
+          <div className="policy-document-reference">
             <span>Privacy Notice<br />Reference: UOM-CHEM-SR-PRIV-001</span>
-            <a className="policy-return-link" href="/">Return to Mail System</a>
           </div>
         </div>
       </header>
