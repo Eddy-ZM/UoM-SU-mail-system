@@ -25,6 +25,7 @@ test("the mail-system credit is a protected final row outside the purple footer"
   assert.equal((template.match(new RegExp(credit, "g")) || []).length, 1);
   assert.match(template, /data-protected-section="system-credit"/);
   assert.match(template, /data-protected-section="system-credit"[^>]*><td[^>]*background-color:#ffffff[^>]*color:#4a454d[^>]*>/);
+  assert.match(template, /data-protected-section="system-credit"[^>]*><td[^>]*padding:5px 12px[^>]*font-size:8px[^>]*line-height:11px[^>]*white-space:nowrap/);
   assert.ok(template.indexOf('data-protected-section="system-credit"') > template.indexOf('data-protected-section="safety-footer"'));
   assert.match(template, /data-protected-section="system-credit"[\s\S]*?<\/tr>\s*<\/table>\s*<\/td>/);
 });
