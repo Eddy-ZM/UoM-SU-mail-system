@@ -289,6 +289,13 @@ export function App({ currentUser }) {
     setArchiveInitialId("");
   }, []);
 
+  const returnHome = useCallback(() => {
+    setArchiveReceipt(null);
+    setArchiveOpen(false);
+    setArchiveInitialId("");
+    setEditorPhase(EDITOR_PHASE.CHOOSER);
+  }, []);
+
   useEffect(() => {
     if (!canModifyDraft(editorPhase)) return undefined;
     let cancelled = false;
@@ -1030,6 +1037,7 @@ export function App({ currentUser }) {
           onCreateEmail={startNewEmail}
           onOpenArchived={openArchivedReceipt}
           onSearchArchive={openArchiveSearch}
+          onHome={returnHome}
           onLogout={signOut}
           isLoggingOut={signingOut}
         />

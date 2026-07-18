@@ -141,6 +141,7 @@ export function ArchivedSession({
   onCreateEmail,
   onOpenArchived,
   onSearchArchive,
+  onHome,
   onLogout,
   isLoggingOut = false,
 }) {
@@ -160,6 +161,7 @@ export function ArchivedSession({
           <button className="archive-session__primary" type="button" onClick={onOpenArchived}>Open read-only copy</button>
           <button type="button" onClick={onCreateEmail}>Create another email</button>
           <button type="button" onClick={onSearchArchive}>Search the archive</button>
+          <button type="button" onClick={onHome}>Home</button>
         </div>
       </section>
       <WorkspaceFooter />
