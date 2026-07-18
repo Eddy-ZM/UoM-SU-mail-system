@@ -1,4 +1,5 @@
 export const MESSAGE_NUMBER_PREFIX = "CHEM-SR-";
+export const MESSAGE_NUMBER_PLACEHOLDER = `${MESSAGE_NUMBER_PREFIX}00000000`;
 export const VERIFICATION_CODE_PLACEHOLDER = "PENDING-ARCHIVE";
 
 const MESSAGE_NUMBER_RE = /^CHEM-SR-[0-9A-F]{8}$/;
@@ -27,12 +28,17 @@ function readSingleTaggedValue(html, pattern, fieldName) {
 export function generateMessageNumber(randomSource = globalThis.crypto) {
   if (!randomSource?.getRandomValues) throw new Error("A cryptographically secure random source is required.");
   const bytes = new Uint8Array(4);
-  randomSource.getRandomValues(bytes);
-  return `${MESSAGE_NUMBER_PREFIX}${[...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("").toUpperCase()}`;
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    randomSource.getRandomValues(bytes);
+    const messageNumber = `${MESSAGE_NUMBER_PREFIX}${[...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("").toUpperCase()}`;
+    if (messageNumber !== MESSAGE_NUMBER_PLACEHOLDER) return messageNumber;
+  }
+  throw new Error("The secure random source repeatedly produced the reserved message-number placeholder.");
 }
 
 export function isValidMessageNumber(value) {
-  return MESSAGE_NUMBER_RE.test(String(value || "").trim());
+  const normalized = String(value || "").trim();
+  return normalized !== MESSAGE_NUMBER_PLACEHOLDER && MESSAGE_NUMBER_RE.test(normalized);
 }
 
 export function extractMessageNumber(html) {

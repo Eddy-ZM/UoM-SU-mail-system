@@ -26,6 +26,14 @@ test("message numbers use four secure random bytes as eight uppercase hexadecima
   assert.equal(extractMessageNumber(result.html), "CHEM-SR-000FA0FF");
 });
 
+test("a saved draft with the all-zero placeholder receives a new random message number", () => {
+  const randomSource = { getRandomValues(bytes) { bytes.set([222, 173, 190, 239]); return bytes; } };
+  const source = baseEmail.replace("CHEM-SR-A1B2C3D4", "CHEM-SR-00000000");
+  const result = ensureMessageNumber(source, { randomSource });
+  assert.equal(result.messageNumber, "CHEM-SR-DEADBEEF");
+  assert.equal(extractMessageNumber(result.html), "CHEM-SR-DEADBEEF");
+});
+
 test("archive hash stays internal while its first 64 bits form the displayed verification code", async () => {
   const prepared = await prepareEmailForArchive(baseEmail);
   assert.match(prepared.sha256, /^[0-9A-F]{64}$/);
