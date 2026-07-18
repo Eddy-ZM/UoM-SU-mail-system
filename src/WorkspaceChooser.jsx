@@ -55,7 +55,7 @@ function WorkspaceFooter() {
   return (
     <footer className="workspace-chooser__footer">
       <span>Department of Chemistry · Student Representatives</span>
-      <span>Access managed by ChemVault User System</span>
+      <span>Access managed by the Department of Chemistry Student Representatives, The University of Manchester</span>
     </footer>
   );
 }
