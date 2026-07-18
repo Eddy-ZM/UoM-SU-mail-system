@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.npm-cache/
+.npmrc
+.DS_Store
+*.log
+editor-preview.png
+design-qa.md
