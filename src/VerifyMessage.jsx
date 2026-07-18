@@ -1,15 +1,39 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function VerifyMessage() {
   const [messageNumber, setMessageNumber] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [result, setResult] = useState({ status: "idle" });
+  const verifyButtonRef = useRef(null);
+  const resultIsOpen = ["valid", "invalid", "unavailable"].includes(result.status);
 
   useEffect(() => {
     const previousTitle = document.title;
     document.title = "Verify an announcement | Manchester Chemistry Student Representatives";
     return () => { document.title = previousTitle; };
   }, []);
+
+  useEffect(() => {
+    if (!resultIsOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") {
+        setResult({ status: "idle" });
+        window.requestAnimationFrame(() => verifyButtonRef.current?.focus());
+      }
+    };
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [resultIsOpen]);
+
+  const dismissResult = () => {
+    setResult({ status: "idle" });
+    window.requestAnimationFrame(() => verifyButtonRef.current?.focus());
+  };
 
   const submit = async (event) => {
     event.preventDefault();
@@ -24,7 +48,7 @@ export function VerifyMessage() {
       const payload = await response.json();
       if (!response.ok) throw new Error("unavailable");
       setResult(payload.valid === true
-        ? { status: "valid", firstArchivedAt: payload.firstArchivedAt }
+        ? { status: "valid", subject: payload.subject, firstArchivedAt: payload.firstArchivedAt }
         : { status: "invalid" });
     } catch {
       setResult({ status: "unavailable" });
@@ -33,7 +57,7 @@ export function VerifyMessage() {
 
   return (
     <main className="verify-page">
-      <article className="verify-shell">
+      <article className="verify-shell" inert={resultIsOpen ? true : undefined}>
         <header className="verify-masthead">
           <a className="verify-university-brand" href="https://www.manchester.ac.uk/" aria-label="The University of Manchester website">
             <img
@@ -92,20 +116,14 @@ export function VerifyMessage() {
                 />
               </div>
 
-              <button type="submit" disabled={result.status === "checking"}>{result.status === "checking" ? "Checking archive..." : "Verify announcement"}</button>
+              <button ref={verifyButtonRef} type="submit" disabled={result.status === "checking"}>{result.status === "checking" ? "Checking archive..." : "Verify announcement"}</button>
             </form>
-
-            <div className={`verify-result ${result.status}`} aria-live="polite">
-              {result.status === "valid" && <><strong>Announcement verified</strong><span>The message number and verification code match an immutable Student Representatives archive.</span>{result.firstArchivedAt && <small>First archived: {new Date(result.firstArchivedAt).toLocaleString("en-GB")}</small>}</>}
-              {result.status === "invalid" && <><strong>No matching archive found</strong><span>Check both identifiers carefully. If they are correct, contact a Student Representative before following links or providing information.</span></>}
-              {result.status === "unavailable" && <><strong>Verification service unavailable</strong><span>Please try again later or contact a Student Representative for confirmation.</span></>}
-            </div>
           </section>
 
           <aside className="verify-guidance" aria-labelledby="verify-guidance-title">
             <p>ABOUT THIS CHECK</p>
             <h2 id="verify-guidance-title">Confirm a message before you act</h2>
-            <p>The check compares only the two identifiers you enter. It does not display the email, its contents or the representative who archived it.</p>
+            <p>The check compares only the two identifiers you enter. A valid result displays the archived email title, but never the email body or the representative who archived it.</p>
             <ol>
               <li><span>1</span><div><strong>Find both identifiers</strong><small>They appear together in the purple email footer.</small></div></li>
               <li><span>2</span><div><strong>Enter them exactly</strong><small>Letters are not case-sensitive.</small></div></li>
@@ -114,7 +132,7 @@ export function VerifyMessage() {
             <dl>
               <div><dt>Service owner</dt><dd>Department of Chemistry Student Representatives</dd></div>
               <div><dt>Record type</dt><dd>Immutable email archive</dd></div>
-              <div><dt>Information returned</dt><dd>Match status and first archive time only</dd></div>
+              <div><dt>Information returned</dt><dd>Match status, email title and first archive time</dd></div>
             </dl>
           </aside>
         </div>
@@ -131,6 +149,40 @@ export function VerifyMessage() {
           <p>&copy; {new Date().getFullYear()} University of Manchester Student Representatives Team &middot; Technical support provided by Ziwen M.</p>
         </footer>
       </article>
+      {resultIsOpen && (
+        <div className="verify-result-overlay" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && dismissResult()}>
+          <section className={`verify-result-dialog ${result.status}`} role="dialog" aria-modal="true" aria-labelledby="verification-result-title" aria-describedby="verification-result-description">
+            <p className="verify-result-kicker">VERIFICATION RESULT</p>
+            {result.status === "valid" && (
+              <>
+                <span className="verify-result-mark" aria-hidden="true">&#10003;</span>
+                <h2 id="verification-result-title">Announcement verified</h2>
+                <p id="verification-result-description">The message number and verification code match an immutable Student Representatives archive.</p>
+                <dl className="verify-result-details">
+                  <div className="verify-result-subject"><dt>Email title</dt><dd>{result.subject || "Untitled announcement"}</dd></div>
+                  <div><dt>Message number</dt><dd>{messageNumber}</dd></div>
+                  {result.firstArchivedAt && <div><dt>First archived</dt><dd>{new Date(result.firstArchivedAt).toLocaleString("en-GB")}</dd></div>}
+                </dl>
+              </>
+            )}
+            {result.status === "invalid" && (
+              <>
+                <span className="verify-result-mark" aria-hidden="true">!</span>
+                <h2 id="verification-result-title">No matching archive found</h2>
+                <p id="verification-result-description">Check both identifiers carefully. If they are correct, contact a Student Representative before following links or providing information.</p>
+              </>
+            )}
+            {result.status === "unavailable" && (
+              <>
+                <span className="verify-result-mark" aria-hidden="true">!</span>
+                <h2 id="verification-result-title">Verification service unavailable</h2>
+                <p id="verification-result-description">Please try again later or contact a Student Representative for confirmation.</p>
+              </>
+            )}
+            <button type="button" onClick={dismissResult} autoFocus>Close</button>
+          </section>
+        </div>
+      )}
     </main>
   );
 }

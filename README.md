@@ -34,7 +34,7 @@ The published site also contains the formal Privacy Notice used by the Mail Syst
 - Require a successful immutable D1 backup before Copy HTML, Copy for Outlook or Download HTML can continue.
 - Record the full exported HTML and document metadata together with the export operation, verified ChemVault user ID, email, role and server time.
 - Search read-only backups by email subject, message number, verification code or SHA-256; only `ziwen.mu@chemvault.science` may delete a backup, enforced by the server.
-- Let students verify a message number and short code at the public `/verify/` page without exposing archived HTML or submitter identity.
+- Let students verify a message number and short code at the public `/verify/` page and view the archived email title without exposing archived HTML or submitter identity.
 - Remove editor-only metadata and unsafe active content from exported HTML.
 - Preserve an invisible HTML comment crediting the Student Representatives Team and technical support by Ziwen M.; it never appears in the rendered email.
 - Show a fixed website footer with Manchester Student Representatives attribution, technical support credit and a live local clock; this footer is not included in email exports.

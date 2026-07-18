@@ -216,10 +216,16 @@ export async function verifyArchivedMessage(db, messageNumber, verificationCode)
   const normalizedCode = String(verificationCode || "").trim().toUpperCase();
   if (!isValidMessageNumber(normalizedNumber) || !isValidVerificationCode(normalizedCode)) return { valid: false };
   const row = await db.prepare(`
-    SELECT MIN(created_at) AS first_archived_at
+    SELECT subject, created_at AS first_archived_at
     FROM email_archives
     WHERE message_number = ? AND verification_code = ?
+    ORDER BY created_at ASC
+    LIMIT 1
   `).bind(normalizedNumber, normalizedCode).first();
   if (!row?.first_archived_at) return { valid: false };
-  return { valid: true, firstArchivedAt: row.first_archived_at };
+  return {
+    valid: true,
+    subject: String(row.subject || "").trim() || "Untitled announcement",
+    firstArchivedAt: row.first_archived_at,
+  };
 }

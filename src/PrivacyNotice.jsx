@@ -242,7 +242,7 @@ export function PrivacyNotice() {
             <p>
               Anyone with the message number and short verification code printed in an announcement may use the public
               verification page. The check returns only whether the pair matches an immutable archive and, for a valid
-              match, when it was first archived. An invalid response does not reveal whether the number, the code or both
+              match, the archived email title and when it was first archived. An invalid response does not reveal whether the number, the code or both
               were incorrect, and the public service never returns the email HTML, full SHA-256 or submitter identity.
             </p>
             <ul>

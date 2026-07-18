@@ -2,18 +2,18 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { onRequestPost } from "../functions/api/verification.js";
 
-function dbReturning(firstArchivedAt) {
+function dbReturning(firstArchivedAt, subject = "Chemistry student questionnaire") {
   return {
     prepare() {
       return {
         bind() { return this; },
-        async first() { return { first_archived_at: firstArchivedAt }; },
+        async first() { return { subject, first_archived_at: firstArchivedAt }; },
       };
     },
   };
 }
 
-test("public verification confirms a matching pair without returning archive or submitter data", async () => {
+test("public verification returns the archived title without returning HTML or submitter data", async () => {
   const response = await onRequestPost({
     request: new Request("https://uom-su-mail-system.pages.dev/api/verification", {
       method: "POST",
@@ -23,7 +23,7 @@ test("public verification confirms a matching pair without returning archive or 
     env: { ARCHIVE_DB: dbReturning("2026-07-18T12:00:00.000Z") },
   });
   const payload = await response.json();
-  assert.deepEqual(payload, { valid: true, firstArchivedAt: "2026-07-18T12:00:00.000Z" });
+  assert.deepEqual(payload, { valid: true, subject: "Chemistry student questionnaire", firstArchivedAt: "2026-07-18T12:00:00.000Z" });
   assert.equal(JSON.stringify(payload).includes("html"), false);
   assert.equal(JSON.stringify(payload).includes("submitted"), false);
 });

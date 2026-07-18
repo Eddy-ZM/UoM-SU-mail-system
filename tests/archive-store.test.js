@@ -100,15 +100,18 @@ test("archive search includes the email subject and returns it in the summary", 
 
 test("public verification returns the same generic invalid result for wrong or malformed values", async () => {
   const validDb = {
-    prepare() {
+    prepare(sql) {
+      assert.match(sql, /SELECT subject, created_at AS first_archived_at/);
+      assert.match(sql, /ORDER BY created_at ASC/);
       return {
         bind() { return this; },
-        async first() { return { first_archived_at: "2026-07-18T12:00:00.000Z" }; },
+        async first() { return { subject: "Chemistry student questionnaire", first_archived_at: "2026-07-18T12:00:00.000Z" }; },
       };
     },
   };
   assert.deepEqual(await verifyArchivedMessage(validDb, "CHEM-SR-89ABCDEF", "1234-ABCD-5678-EF90"), {
     valid: true,
+    subject: "Chemistry student questionnaire",
     firstArchivedAt: "2026-07-18T12:00:00.000Z",
   });
   assert.deepEqual(await verifyArchivedMessage(validDb, "not-a-number", "wrong"), { valid: false });
