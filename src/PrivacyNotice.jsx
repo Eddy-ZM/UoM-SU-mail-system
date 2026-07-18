@@ -5,15 +5,29 @@ const MICROSOFT_FORMS_PRIVACY_URL = "https://support.microsoft.com/en-us/forms/s
 
 function PolicySection({ number, title, children }) {
   return (
-    <section className="policy-section" aria-labelledby={`policy-section-${number}`}>
-      <div className="policy-section-number" aria-hidden="true">{number}</div>
-      <div>
-        <h2 id={`policy-section-${number}`}>{title}</h2>
-        {children}
-      </div>
+    <section className="policy-section" id={`policy-section-${number}`} aria-labelledby={`policy-heading-${number}`}>
+      <h2 id={`policy-heading-${number}`}><span>{Number(number)}.</span> {title}</h2>
+      {children}
     </section>
   );
 }
+
+const POLICY_CONTENTS = [
+  ["01", "Who we are and when this notice applies"],
+  ["02", "Acknowledgement, consent and choice"],
+  ["03", "Information we collect"],
+  ["04", "How and why we use information"],
+  ["05", "Lawful bases and sensitive information"],
+  ["06", "Microsoft 365 Forms and other service providers"],
+  ["07", "Who can access information and when it may be shared"],
+  ["08", "International processing"],
+  ["09", "Retention and deletion"],
+  ["10", "Security"],
+  ["11", "Cookies, local storage and similar technologies"],
+  ["12", "Your data-protection rights"],
+  ["13", "Contact us"],
+  ["14", "Changes to this notice"],
+];
 
 export function PrivacyNotice() {
   useEffect(() => {
@@ -30,33 +44,40 @@ export function PrivacyNotice() {
         <div className="policy-masthead-inner">
           <a className="policy-brand" href="/" aria-label="Return to the mail system">
             <img
-              src="https://assets.manchester.ac.uk/logos/hi-res/TAB_UNI_MAIN_logo/White_backgrounds/TAB_col_white_background.png"
+              src="https://www.library.manchester.ac.uk/assets/images/design/logo-university-of-manchester.png"
               alt="The University of Manchester"
             />
-            <span>Department of Chemistry<br />Student Representatives</span>
+            <span><strong>Department of Chemistry</strong><br />Student Representatives</span>
           </a>
-          <a className="policy-return-link" href="/">Mail System</a>
+          <div className="policy-header-actions">
+            <span>Privacy Notice<br />Reference: UOM-CHEM-SR-PRIV-001</span>
+            <a className="policy-return-link" href="/">Return to Mail System</a>
+          </div>
         </div>
       </header>
 
       <main className="policy-main">
         <div className="policy-hero">
-          <p className="policy-kicker">FORMAL PRIVACY NOTICE</p>
-          <h1>University of Manchester Student Representative Mail System</h1>
+          <p className="policy-kicker">The University of Manchester · Department of Chemistry</p>
+          <h1>Privacy Notice</h1>
+          <p className="policy-document-subtitle">University of Manchester Student Representative Mail System</p>
           <p className="policy-lead">
             This notice explains how the Department of Chemistry Student Representatives Team handles information
             when representatives use the Mail System and when students submit responses through Microsoft 365 Forms,
             surveys, questionnaires or feedback channels linked from our announcements.
           </p>
-          <dl className="policy-meta">
-            <div><dt>Effective date</dt><dd>1 July 2026</dd></div>
-            <div><dt>Last updated</dt><dd>18 July 2026</dd></div>
-            <div><dt>Version</dt><dd>1.1</dd></div>
-          </dl>
+          <table className="policy-document-control">
+            <caption>Document control</caption>
+            <tbody>
+              <tr><th scope="row">Document owner</th><td>Department of Chemistry Student Representatives Team</td><th scope="row">Reference</th><td>UOM-CHEM-SR-PRIV-001</td></tr>
+              <tr><th scope="row">Effective date</th><td>1 July 2026</td><th scope="row">Last reviewed</th><td>18 July 2026</td></tr>
+              <tr><th scope="row">Version</th><td>1.2</td><th scope="row">Next review</th><td>By 1 July 2027</td></tr>
+            </tbody>
+          </table>
         </div>
 
         <aside className="policy-summary" aria-label="Privacy notice summary">
-          <strong>Important summary</strong>
+          <h2>Purpose of this notice</h2>
           <p>
             If you submit information through a form, questionnaire or response channel that links to this notice,
             authorised members of the Student Representatives Team may access and analyse your submission for student
@@ -64,6 +85,15 @@ export function PrivacyNotice() {
             personal information.
           </p>
         </aside>
+
+        <nav className="policy-contents" aria-labelledby="policy-contents-heading">
+          <h2 id="policy-contents-heading">Contents</h2>
+          <ol>
+            {POLICY_CONTENTS.map(([number, title]) => (
+              <li key={number}><a href={`#policy-section-${number}`}><span>{Number(number)}.</span> {title}</a></li>
+            ))}
+          </ol>
+        </nav>
 
         <div className="policy-content">
           <PolicySection number="01" title="Who we are and when this notice applies">
@@ -320,8 +350,9 @@ export function PrivacyNotice() {
       </main>
 
       <footer className="policy-footer">
-        <span>&copy; 2026 Student Representatives Team, The University of Manchester</span>
-        <span>Technical support provided by Ziwen M.</span>
+        <div><strong>Document reference</strong><span>UOM-CHEM-SR-PRIV-001 · Version 1.2</span></div>
+        <div><strong>Owner</strong><span>Department of Chemistry Student Representatives Team</span></div>
+        <div><strong>Copyright</strong><span>&copy; 2026 The University of Manchester Student Representatives Team. Technical support provided by Ziwen M.</span></div>
       </footer>
     </div>
   );
