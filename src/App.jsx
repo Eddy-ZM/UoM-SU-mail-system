@@ -109,9 +109,9 @@ const EDITABLE_REGIONS = [
   { selector: '[data-content-block]:not([data-content-block-core="true"])[data-block-editable], [data-content-block]:not([data-content-block-core="true"]) [data-block-editable]', label: "Custom component text" },
 ];
 
-function readSavedDraft() {
+function readSavedDraft(owner) {
   try {
-    const saved = readDraft(localStorage);
+    const saved = readDraft(localStorage, owner);
     if (saved && isUsableEmailHtml(saved.html)) {
       const restored = getProtectedContentIssues(saved.html).length > 0
         ? restoreProtectedContent(saved.html, initialTemplate)
@@ -125,7 +125,7 @@ function readSavedDraft() {
         draft: saved,
       };
     }
-    if (saved) clearDraft(localStorage);
+    if (saved) clearDraft(localStorage, owner);
   } catch {
     // A corrupt or unavailable local draft should never block the editor.
   }
@@ -178,7 +178,11 @@ function AppButton({ className = "", children, ...props }) {
 }
 
 export function App({ currentUser }) {
-  const initialDraft = useMemo(readSavedDraft, []);
+  const draftOwner = useMemo(
+    () => String(currentUser?.email || currentUser?.id || "").trim().toLowerCase(),
+    [currentUser?.email, currentUser?.id],
+  );
+  const initialDraft = useMemo(() => readSavedDraft(draftOwner), [draftOwner]);
   const [html, setHtml] = useState(initialDraft.html);
   const [previewHtml, setPreviewHtml] = useState(initialDraft.html);
   const [subject, setSubject] = useState(initialDraft.subject);
@@ -275,7 +279,7 @@ export function App({ currentUser }) {
     const remaining = Number(savedDraft.expiresAt) - Date.now();
     const expireDraft = () => {
       try {
-        clearDraft(localStorage);
+        clearDraft(localStorage, draftOwner);
       } catch {
         // The card still disappears even if browser storage is unavailable.
       }
@@ -288,7 +292,7 @@ export function App({ currentUser }) {
     }
     const timer = window.setTimeout(expireDraft, remaining);
     return () => window.clearTimeout(timer);
-  }, [savedDraft?.expiresAt, showNotice]);
+  }, [draftOwner, savedDraft?.expiresAt, showNotice]);
 
   const signOut = useCallback(async () => {
     if (signingOut) return;
@@ -319,7 +323,7 @@ export function App({ currentUser }) {
       return;
     }
     try {
-      const record = saveDraft(localStorage, {
+      const record = saveDraft(localStorage, draftOwner, {
         html,
         subject,
         filename: normaliseFilename(filename),
@@ -337,12 +341,12 @@ export function App({ currentUser }) {
       setSaveState("Local save unavailable");
       showNotice("The draft could not be saved in this browser");
     }
-  }, [activePreset, editorPhase, filename, html, showNotice, subject]);
+  }, [activePreset, draftOwner, editorPhase, filename, html, showNotice, subject]);
 
   const resumeSavedDraft = useCallback(() => {
     if (!savedDraft || isDraftExpired(savedDraft)) {
       try {
-        clearDraft(localStorage);
+        clearDraft(localStorage, draftOwner);
       } catch {
         // Expired local data must not keep a stale card visible.
       }
@@ -352,18 +356,18 @@ export function App({ currentUser }) {
     }
     setEditorPhase(EDITOR_PHASE.EDITING);
     setSyncState("Saved draft reopened");
-  }, [savedDraft, showNotice]);
+  }, [draftOwner, savedDraft, showNotice]);
 
   const deleteSavedDraft = useCallback(() => {
     if (!savedDraft || !window.confirm("Delete this saved draft? This cannot be undone.")) return;
     try {
-      clearDraft(localStorage);
+      clearDraft(localStorage, draftOwner);
     } catch {
       // Removing the in-memory record still hides the draft for this session.
     }
     setSavedDraft(null);
     showNotice("Draft deleted");
-  }, [savedDraft, showNotice]);
+  }, [draftOwner, savedDraft, showNotice]);
 
   const startNewEmail = useCallback(() => {
     if (savedDraft && !window.confirm("Create a new email and delete the current saved draft?")) return;
@@ -387,11 +391,11 @@ export function App({ currentUser }) {
     setSyncState("Visual and HTML are in sync");
     setEditorPhase(EDITOR_PHASE.EDITING);
     try {
-      clearDraft(localStorage);
+      clearDraft(localStorage, draftOwner);
     } catch {
       // A blocked local store must not prevent creation of a fresh email.
     }
-  }, [savedDraft]);
+  }, [draftOwner, savedDraft]);
 
   const openArchiveSearch = useCallback(() => {
     setArchiveInitialId("");
@@ -453,7 +457,7 @@ export function App({ currentUser }) {
     setSaveState("Saving locally…");
     const timer = window.setTimeout(() => {
       try {
-        const record = saveDraft(localStorage, {
+        const record = saveDraft(localStorage, draftOwner, {
           html,
           subject,
           filename: normaliseFilename(filename),
@@ -466,7 +470,7 @@ export function App({ currentUser }) {
       }
     }, 500);
     return () => window.clearTimeout(timer);
-  }, [activePreset, editorPhase, filename, html, protectionIssues.length, subject]);
+  }, [activePreset, draftOwner, editorPhase, filename, html, protectionIssues.length, subject]);
 
   useEffect(() => {
     if (!canModifyDraft(editorPhase)) return undefined;
@@ -1049,7 +1053,7 @@ export function App({ currentUser }) {
       setArchiveReceipt(receipt);
       setArchiveOpen(false);
       try {
-        clearDraft(localStorage);
+        clearDraft(localStorage, draftOwner);
       } catch {
         // The archived server record remains authoritative if local storage is unavailable.
       }
@@ -1066,7 +1070,7 @@ export function App({ currentUser }) {
     } finally {
       setExportBusy("");
     }
-  }, [activePreset, exportIsAllowed, filename, html, modules, showNotice, subject]);
+  }, [activePreset, draftOwner, exportIsAllowed, filename, html, modules, showNotice, subject]);
 
   const copySource = async () => {
     const archived = await prepareArchivedExport("copy_html");
