@@ -23,12 +23,17 @@ import {
 import { DEFAULT_PRESET_ID, EMAIL_PRESETS, getPresetById } from "./emailPresets.js";
 import { ArchivePanel } from "./ArchivePanel.jsx";
 import { archiveEmailExport } from "./archiveClient.js";
+import { ArchivedSession, ArchiveProgress, WorkspaceChooser } from "./WorkspaceChooser.jsx";
+import {
+  EDITOR_PHASE,
+  archiveReceiptFromExport,
+  canModifyDraft,
+} from "./editorSession.js";
 import {
   ensureMessageNumber,
   extractVerificationCode,
   markVerificationCodePending,
   prepareEmailForArchive,
-  setVerificationCode,
 } from "../shared/email-integrity.js";
 
 const STORAGE_KEY = "student-union-mail-studio:v6";
@@ -183,11 +188,14 @@ export function App({ currentUser }) {
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [exportBusy, setExportBusy] = useState("");
   const [signingOut, setSigningOut] = useState(false);
+  const [editorPhase, setEditorPhase] = useState(EDITOR_PHASE.CHOOSER);
+  const [archiveReceipt, setArchiveReceipt] = useState(null);
   const iframeRef = useRef(null);
   const savedSelectionRef = useRef(null);
   const paletteDragTypeRef = useRef(null);
   const updateOrigin = useRef("initial");
   const noticeTimer = useRef(null);
+  const archiveLockRef = useRef(false);
 
   const metadata = useMemo(() => getEmailMetadata(html), [html]);
   const modules = useMemo(() => getEmailModules(html), [html]);
@@ -241,7 +249,30 @@ export function App({ currentUser }) {
     }
   }, [showNotice, signingOut]);
 
+  const startNewEmail = useCallback(() => {
+    const identified = ensureMessageNumber(initialTemplate, { forceNew: true });
+    archiveLockRef.current = false;
+    updateOrigin.current = "new-email";
+    setArchiveReceipt(null);
+    setArchiveOpen(false);
+    setExportBusy("");
+    setHtml(identified.html);
+    setPreviewHtml(identified.html);
+    setSubject("Department of Chemistry Student Representatives | Student Feedback Forum");
+    setFilename("manchester-chemistry-student-feedback-forum.html");
+    setActivePreset(DEFAULT_PRESET_ID);
+    setCodeError("");
+    setSyncState("Visual and HTML are in sync");
+    setEditorPhase(EDITOR_PHASE.EDITING);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // A blocked local store must not prevent creation of a fresh email.
+    }
+  }, []);
+
   useEffect(() => {
+    if (!canModifyDraft(editorPhase)) return undefined;
     let cancelled = false;
     const timer = window.setTimeout(async () => {
       let embedded;
@@ -266,9 +297,10 @@ export function App({ currentUser }) {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [html]);
+  }, [editorPhase, html]);
 
   useEffect(() => {
+    if (!canModifyDraft(editorPhase)) return undefined;
     setSaveState("Saving locally…");
     const timer = window.setTimeout(() => {
       try {
@@ -282,9 +314,10 @@ export function App({ currentUser }) {
       }
     }, 500);
     return () => window.clearTimeout(timer);
-  }, [activePreset, filename, html, subject]);
+  }, [activePreset, editorPhase, filename, html, subject]);
 
   useEffect(() => {
+    if (!canModifyDraft(editorPhase)) return undefined;
     if (updateOrigin.current === "visual") {
       updateOrigin.current = "idle";
       return undefined;
@@ -317,9 +350,10 @@ export function App({ currentUser }) {
       setSyncState("Visual and HTML are in sync");
     }, 420);
     return () => window.clearTimeout(timer);
-  }, [html]);
+  }, [editorPhase, html]);
 
   const handleFrameLoad = useCallback(() => {
+    if (!canModifyDraft(editorPhase)) return;
     const frame = iframeRef.current;
     const doc = frame?.contentDocument;
     if (!doc) return;
@@ -671,7 +705,7 @@ export function App({ currentUser }) {
 
     doc.addEventListener("input", handleInput);
     doc.addEventListener("selectionchange", handleSelectionChange);
-  }, [showNotice]);
+  }, [editorPhase, showNotice]);
 
   const applyFormatting = useCallback((command, value) => {
     const doc = iframeRef.current?.contentDocument;
@@ -785,6 +819,7 @@ export function App({ currentUser }) {
   }, [html, showNotice]);
 
   const exportIsAllowed = useCallback(() => {
+    if (!canModifyDraft(editorPhase) || archiveLockRef.current) return false;
     const issues = getProtectedContentIssues(html);
     if (!isUsableEmailHtml(html) || issues.length > 0) {
       setCodeError(issues.length > 0
@@ -794,35 +829,48 @@ export function App({ currentUser }) {
       return false;
     }
     return true;
-  }, [html, showNotice]);
+  }, [editorPhase, html, showNotice]);
 
   const prepareArchivedExport = useCallback(async (operation) => {
-    if (!exportIsAllowed() || exportBusy) return null;
+    if (!exportIsAllowed()) return null;
+    const snapshot = {
+      html: cleanEmailHtml(html),
+      subject,
+      filename: normaliseFilename(filename),
+      preset: activePreset,
+      modules: { ...modules },
+      operation,
+    };
+    archiveLockRef.current = true;
     setExportBusy(operation);
+    setEditorPhase(EDITOR_PHASE.ARCHIVING);
     setSyncState("Creating immutable email backup...");
     try {
-      const cleaned = cleanEmailHtml(html);
-      const archived = await archiveEmailExport({
-        html: cleaned,
-        subject,
-        filename: normaliseFilename(filename),
-        preset: activePreset,
-        modules,
-        operation,
-      });
+      const archived = await archiveEmailExport(snapshot);
+      const receipt = archiveReceiptFromExport(archived, operation);
       updateOrigin.current = "archive-created";
-      setHtml((current) => setVerificationCode(current, archived.verificationCode));
-      setPreviewHtml((current) => setVerificationCode(current, archived.verificationCode));
+      setHtml(archived.html);
+      setPreviewHtml("");
+      setArchiveReceipt(receipt);
+      setArchiveOpen(false);
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch {
+        // The archived server record remains authoritative if local storage is unavailable.
+      }
       setSyncState(`Immutable backup ${archived.archive.id} created`);
+      setEditorPhase(EDITOR_PHASE.ARCHIVED);
       return archived;
     } catch (error) {
+      archiveLockRef.current = false;
+      setEditorPhase(EDITOR_PHASE.EDITING);
       setSyncState("Export stopped because the backup failed");
       showNotice(error instanceof Error ? error.message : "Immutable backup failed; nothing was copied or downloaded");
       return null;
     } finally {
       setExportBusy("");
     }
-  }, [activePreset, exportBusy, exportIsAllowed, filename, html, modules, showNotice, subject]);
+  }, [activePreset, exportIsAllowed, filename, html, modules, showNotice, subject]);
 
   const copySource = async () => {
     const archived = await prepareArchivedExport("copy_html");
@@ -875,7 +923,7 @@ export function App({ currentUser }) {
       }
       showNotice(`Outlook email copied and archived as ${archived.messageNumber}`);
     } catch {
-      showNotice("Copy was blocked. Use Copy HTML instead.");
+      showNotice("Copy was blocked. The archived email remains locked and can be viewed in the archive.");
     }
   };
 
@@ -886,7 +934,7 @@ export function App({ currentUser }) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = normaliseFilename(filename);
+    link.download = archived.archive.filename;
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -906,6 +954,43 @@ export function App({ currentUser }) {
     setCodeError("");
     showNotice("Template reset");
   };
+
+  if (editorPhase === EDITOR_PHASE.CHOOSER) {
+    return (
+      <>
+        <WorkspaceChooser
+          user={currentUser}
+          onCreateEmail={startNewEmail}
+          onSearchArchive={() => setArchiveOpen(true)}
+          onLogout={signOut}
+          isLoggingOut={signingOut}
+        />
+        <ArchivePanel open={archiveOpen} onClose={() => setArchiveOpen(false)} />
+        {notice && <div className="toast" role="status" aria-live="polite">{notice}</div>}
+      </>
+    );
+  }
+
+  if (editorPhase === EDITOR_PHASE.ARCHIVING) {
+    return <ArchiveProgress user={currentUser} />;
+  }
+
+  if (editorPhase === EDITOR_PHASE.ARCHIVED && archiveReceipt) {
+    return (
+      <>
+        <ArchivedSession
+          user={currentUser}
+          receipt={archiveReceipt}
+          onCreateEmail={startNewEmail}
+          onSearchArchive={() => setArchiveOpen(true)}
+          onLogout={signOut}
+          isLoggingOut={signingOut}
+        />
+        <ArchivePanel open={archiveOpen} onClose={() => setArchiveOpen(false)} />
+        {notice && <div className="toast" role="status" aria-live="polite">{notice}</div>}
+      </>
+    );
+  }
 
   return (
     <div className="studio-shell">
