@@ -17,6 +17,7 @@ export function getUserSystemOrigin(env = {}) {
 
 export function isPublicRequestPath(pathname) {
   if (pathname === "/agreement/privacy-notice" || pathname === "/agreement/privacy-notice/") return true;
+  if (pathname === "/verify" || pathname === "/verify/" || pathname === "/api/verification") return true;
   if (pathname.startsWith("/assets/")) return true;
   return pathname === "/favicon.ico" || pathname === "/robots.txt" || pathname === "/site.webmanifest";
 }

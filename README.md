@@ -29,6 +29,12 @@ The published site also contains the formal Privacy Notice used by the Mail Syst
 - Generate each contact name from the email prefix automatically, removing digits and separator characters.
 - Copy formatted email content for new Outlook.
 - Copy the complete HTML source or download a UTF-8 `.html` file.
+- Generate a persistent `CHEM-SR-` message number from four cryptographically secure random bytes for every new draft.
+- Generate a full SHA-256 over canonical exported HTML, retain it internally, and place a 64-bit formatted lookup code in the protected footer.
+- Require a successful immutable D1 backup before Copy HTML, Copy for Outlook or Download HTML can continue.
+- Record the full exported HTML and document metadata together with the export operation, verified ChemVault user ID, email, role and server time.
+- Search read-only backups by message number or SHA-256; only `ziwen.mu@chemvault.science` may delete a backup, enforced by the server.
+- Let students verify a message number and short code at the public `/verify/` page without exposing archived HTML or submitter identity.
 - Remove editor-only metadata and unsafe active content from exported HTML.
 - Preserve an invisible HTML comment crediting the Student Representatives Team and technical support by Ziwen M.; it never appears in the rendered email.
 - Show a fixed website footer with Manchester Student Representatives attribution, technical support credit and a live local clock; this footer is not included in email exports.
@@ -56,3 +62,11 @@ npm run build
 Production builds use `npm run build` and publish the `dist` directory. The Cloudflare Pages project is connected to the repository's `main` branch so each push triggers a new production build.
 
 Set `USER_AUTH_ORIGIN` in Cloudflare Pages when the User System origin differs from `https://user.chemvault.science`. The User System handoff start and verify endpoints must recognise the `uom-su-mail-system` audience, return `access.allowed` for the requested permission, and allow the editor's Pages and production hostnames as safe `returnTo` destinations. A shared `.chemvault.science` session cookie is supported as a secondary authentication path on the custom domain.
+
+The archive uses the `ARCHIVE_DB` binding declared in `wrangler.toml`. The configured D1 database is `uom-su-mail-archive` in the European Union jurisdiction. Apply the schema before publishing the Functions that depend on it:
+
+```powershell
+npx wrangler d1 migrations apply uom-su-mail-archive --remote
+```
+
+For local Pages Functions development, apply the same migration without `--remote` and run Pages with the configuration in `wrangler.toml`. The `email_archives_are_immutable` database trigger rejects every update. The application exposes only create, read, search and owner-only delete operations; it has no archive-update endpoint.

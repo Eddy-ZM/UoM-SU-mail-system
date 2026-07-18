@@ -25,6 +25,19 @@ test("public privacy notice bypasses authentication middleware", async () => {
   assert.equal(await response.text(), "privacy");
 });
 
+test("public verification page and API bypass the editor authentication redirect", async () => {
+  for (const path of ["/verify/", "/api/verification"]) {
+    let nextCalls = 0;
+    const response = await onRequest({
+      request: new Request(`https://uom-su-mail-system.pages.dev${path}`, { method: path.startsWith("/api/") ? "POST" : "GET" }),
+      env: {},
+      next: async () => { nextCalls += 1; return new Response("public verification"); },
+    });
+    assert.equal(nextCalls, 1);
+    assert.equal(await response.text(), "public verification");
+  }
+});
+
 test("an editor request without a local session redirects to User System handoff", async () => {
   const response = await onRequest({
     request: new Request("https://mailsys.uomsu.chemvault.science/?preset=event"),

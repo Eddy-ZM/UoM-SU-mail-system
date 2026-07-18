@@ -21,6 +21,15 @@ import {
   updateEmailModules,
 } from "./emailUtils.js";
 import { DEFAULT_PRESET_ID, EMAIL_PRESETS, getPresetById } from "./emailPresets.js";
+import { ArchivePanel } from "./ArchivePanel.jsx";
+import { archiveEmailExport } from "./archiveClient.js";
+import {
+  ensureMessageNumber,
+  extractVerificationCode,
+  markVerificationCodePending,
+  prepareEmailForArchive,
+  setVerificationCode,
+} from "../shared/email-integrity.js";
 
 const STORAGE_KEY = "student-union-mail-studio:v6";
 
@@ -74,7 +83,7 @@ function readSelectionFormatting(doc, range) {
 }
 
 const EDITABLE_REGIONS = [
-  { selector: ".mobile-meta", label: "Publication date and notice number" },
+  { selector: ".publication-date", label: "Publication date" },
   { selector: ".category", label: "Announcement category" },
   { selector: ".headline", label: "Announcement title" },
   { selector: ".summary", label: "Announcement summary" },
@@ -91,9 +100,13 @@ const EDITABLE_REGIONS = [
 function readSavedDraft() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-    if (saved && isUsableEmailHtml(saved.html) && getProtectedContentIssues(saved.html).length === 0) {
+    if (saved && isUsableEmailHtml(saved.html)) {
+      const restored = getProtectedContentIssues(saved.html).length > 0
+        ? restoreProtectedContent(saved.html, initialTemplate)
+        : saved.html;
+      const identified = ensureMessageNumber(restored);
       return {
-        html: ensureHiddenCredit(normaliseContactNames(saved.html)),
+        html: ensureHiddenCredit(normaliseContactNames(identified.html)),
         subject: saved.subject || "Department of Chemistry Student Representatives | Student Feedback Forum",
         filename: saved.filename || "manchester-chemistry-student-feedback-forum.html",
         preset: saved.preset || DEFAULT_PRESET_ID,
@@ -103,8 +116,9 @@ function readSavedDraft() {
     // A corrupt or unavailable local draft should never block the editor.
   }
 
+  const identified = ensureMessageNumber(initialTemplate, { forceNew: true });
   return {
-    html: initialTemplate,
+    html: identified.html,
     subject: "Department of Chemistry Student Representatives | Student Feedback Forum",
     filename: "manchester-chemistry-student-feedback-forum.html",
     preset: DEFAULT_PRESET_ID,
@@ -142,6 +156,8 @@ export function App() {
   const [textColor, setTextColor] = useState("#2b2430");
   const [activeFormats, setActiveFormats] = useState(DEFAULT_ACTIVE_FORMATS);
   const [currentTime, setCurrentTime] = useState(() => new Date());
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [exportBusy, setExportBusy] = useState("");
   const iframeRef = useRef(null);
   const savedSelectionRef = useRef(null);
   const paletteDragTypeRef = useRef(null);
@@ -177,6 +193,33 @@ export function App() {
     const timer = window.setInterval(() => setCurrentTime(new Date()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      let embedded;
+      try {
+        embedded = extractVerificationCode(html);
+      } catch {
+        return;
+      }
+      try {
+        const current = await prepareEmailForArchive(cleanEmailHtml(html));
+        if (cancelled || current.verificationCode === embedded) return;
+        const pending = markVerificationCodePending(html);
+        updateOrigin.current = "integrity-stale";
+        setHtml(pending);
+        setPreviewHtml(pending);
+        setSyncState("Message changed; the verification code will be regenerated on export");
+      } catch {
+        // Existing validation reports malformed protected content separately.
+      }
+    }, 650);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [html]);
 
   useEffect(() => {
     setSaveState("Saving locally…");
@@ -706,29 +749,57 @@ export function App() {
     return true;
   }, [html, showNotice]);
 
-  const copySource = async () => {
-    if (!exportIsAllowed()) return;
-    const cleaned = cleanEmailHtml(html);
+  const prepareArchivedExport = useCallback(async (operation) => {
+    if (!exportIsAllowed() || exportBusy) return null;
+    setExportBusy(operation);
+    setSyncState("Creating immutable email backup...");
     try {
-      await navigator.clipboard.writeText(cleaned);
-      showNotice("HTML source copied");
+      const cleaned = cleanEmailHtml(html);
+      const archived = await archiveEmailExport({
+        html: cleaned,
+        subject,
+        filename: normaliseFilename(filename),
+        preset: activePreset,
+        modules,
+        operation,
+      });
+      updateOrigin.current = "archive-created";
+      setHtml((current) => setVerificationCode(current, archived.verificationCode));
+      setPreviewHtml((current) => setVerificationCode(current, archived.verificationCode));
+      setSyncState(`Immutable backup ${archived.archive.id} created`);
+      return archived;
+    } catch (error) {
+      setSyncState("Export stopped because the backup failed");
+      showNotice(error instanceof Error ? error.message : "Immutable backup failed; nothing was copied or downloaded");
+      return null;
+    } finally {
+      setExportBusy("");
+    }
+  }, [activePreset, exportBusy, exportIsAllowed, filename, html, modules, showNotice, subject]);
+
+  const copySource = async () => {
+    const archived = await prepareArchivedExport("copy_html");
+    if (!archived) return;
+    try {
+      await navigator.clipboard.writeText(archived.html);
+      showNotice(`HTML copied and archived as ${archived.messageNumber}`);
     } catch {
       const textarea = document.createElement("textarea");
-      textarea.value = cleaned;
+      textarea.value = archived.html;
       textarea.style.position = "fixed";
       textarea.style.opacity = "0";
       document.body.appendChild(textarea);
       textarea.select();
       document.execCommand("copy");
       textarea.remove();
-      showNotice("HTML source copied");
+      showNotice(`HTML copied and archived as ${archived.messageNumber}`);
     }
   };
 
   const copyForOutlook = async () => {
-    if (!exportIsAllowed()) return;
-    const cleaned = cleanEmailHtml(html);
-    const parsed = new DOMParser().parseFromString(cleaned, "text/html");
+    const archived = await prepareArchivedExport("copy_outlook");
+    if (!archived) return;
+    const parsed = new DOMParser().parseFromString(archived.html, "text/html");
     const bodyHtml = parsed.body.innerHTML;
     const plainText = parsed.body.innerText.replace(/\n{3,}/g, "\n\n").trim();
 
@@ -755,16 +826,16 @@ export function App() {
         selection.removeAllRanges();
         holder.remove();
       }
-      showNotice("Formatted email copied for Outlook");
+      showNotice(`Outlook email copied and archived as ${archived.messageNumber}`);
     } catch {
       showNotice("Copy was blocked. Use Copy HTML instead.");
     }
   };
 
-  const downloadHtml = () => {
-    if (!exportIsAllowed()) return;
-    const cleaned = cleanEmailHtml(html);
-    const blob = new Blob([cleaned], { type: "text/html;charset=utf-8" });
+  const downloadHtml = async () => {
+    const archived = await prepareArchivedExport("download_html");
+    if (!archived) return;
+    const blob = new Blob([archived.html], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -773,14 +844,15 @@ export function App() {
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
-    showNotice("Outlook-ready HTML downloaded");
+    showNotice(`HTML downloaded and archived as ${archived.messageNumber}`);
   };
 
   const resetTemplate = () => {
     if (!window.confirm("Reset the email to the original Manchester Chemistry template? Your current local draft will be replaced.")) return;
     updateOrigin.current = "reset";
-    setHtml(initialTemplate);
-    setPreviewHtml(initialTemplate);
+    const identified = ensureMessageNumber(initialTemplate, { forceNew: true });
+    setHtml(identified.html);
+    setPreviewHtml(identified.html);
     setSubject("Department of Chemistry Student Representatives | Student Feedback Forum");
     setFilename("manchester-chemistry-student-feedback-forum.html");
     setActivePreset(DEFAULT_PRESET_ID);
@@ -800,12 +872,15 @@ export function App() {
           {saveState}
         </div>
         <div className="header-actions">
+          <AppButton className="secondary-on-dark" onClick={() => setArchiveOpen(true)}>Backups</AppButton>
           <AppButton className="secondary-on-dark" onClick={resetTemplate}>Reset</AppButton>
-          <AppButton className="secondary-on-dark" onClick={copySource} disabled={Boolean(codeError || protectionIssues.length)}>Copy HTML</AppButton>
-          <AppButton className="primary" onClick={copyForOutlook} disabled={Boolean(codeError || protectionIssues.length)}>Copy for Outlook</AppButton>
-          <AppButton className="primary-light" onClick={downloadHtml} disabled={Boolean(codeError || protectionIssues.length)}>Download HTML</AppButton>
+          <AppButton className="secondary-on-dark" onClick={copySource} disabled={Boolean(exportBusy || codeError || protectionIssues.length)}>{exportBusy === "copy_html" ? "Archiving..." : "Copy HTML"}</AppButton>
+          <AppButton className="primary" onClick={copyForOutlook} disabled={Boolean(exportBusy || codeError || protectionIssues.length)}>{exportBusy === "copy_outlook" ? "Archiving..." : "Copy for Outlook"}</AppButton>
+          <AppButton className="primary-light" onClick={downloadHtml} disabled={Boolean(exportBusy || codeError || protectionIssues.length)}>{exportBusy === "download_html" ? "Archiving..." : "Download HTML"}</AppButton>
         </div>
       </header>
+
+      <ArchivePanel open={archiveOpen} onClose={() => setArchiveOpen(false)} />
 
       <main className="studio-workspace">
         <aside className="settings-panel" aria-label="Email settings">

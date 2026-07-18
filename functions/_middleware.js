@@ -83,6 +83,7 @@ export async function onRequest(context) {
     );
   }
 
+  if (context.data) context.data.mailAccess = decision;
   const response = await context.next();
   const headers = new Headers(response.headers);
   for (const [name, value] of noStoreHeaders()) headers.set(name, value);

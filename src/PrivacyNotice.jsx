@@ -51,7 +51,7 @@ export function PrivacyNotice() {
           <dl className="policy-meta">
             <div><dt>Effective date</dt><dd>1 July 2026</dd></div>
             <div><dt>Last updated</dt><dd>18 July 2026</dd></div>
-            <div><dt>Version</dt><dd>1.0</dd></div>
+            <div><dt>Version</dt><dd>1.1</dd></div>
           </dl>
         </div>
 
@@ -103,10 +103,20 @@ export function PrivacyNotice() {
           <PolicySection number="03" title="Information we collect">
             <h3>Mail System website</h3>
             <p>
-              The editor does not require an account and does not intentionally upload the email draft, subject line or
-              contact fields to a Team-operated database. Draft data is stored in the browser&apos;s local storage on the
-              device being used. Hosting and security providers may process ordinary request information such as IP
-              address, browser type, request time and requested page for delivery, security and abuse prevention.
+              The editor requires a ChemVault User System account with specific permission to use the Service. For
+              access control and accountability, we process the authenticated user&apos;s User System identifier, email
+              address and system role. Draft data remains in the browser&apos;s local storage on the device being used until
+              a representative chooses an export action.
+            </p>
+            <p>
+              Before Copy HTML, Copy for Outlook or Download HTML is completed, the Service creates an immutable audit
+              backup containing the complete exported HTML, subject, filename, message number, full SHA-256 digest,
+              short verification code, export operation, authenticated submitter identifier, email and role, and the
+              server-recorded time. The full SHA-256 value remains internal; the email displays only a formatted
+              64-bit lookup code derived from its first 16 hexadecimal characters.
+              If that backup cannot be created, the copy or download does not proceed. Hosting and security providers
+              may also process ordinary request information such as IP address, browser type, request time and requested
+              page for delivery, security and abuse prevention.
             </p>
             <h3>Microsoft 365 Forms and student submissions</h3>
             <p>Depending on the form, we may collect:</p>
@@ -128,6 +138,8 @@ export function PrivacyNotice() {
             <p>We may use information to:</p>
             <ul>
               <li>operate the Mail System and deliver representative announcements;</li>
+              <li>create immutable export records so the Team can verify whether an announcement is authentic and maintain accountability for formal communications;</li>
+              <li>provide a public online check for a message number and short verification code without disclosing the archived email or its submitter;</li>
               <li>administer surveys, questionnaires, polls, consultations and feedback exercises;</li>
               <li>read, organise, classify and analyse submissions, including statistical and thematic analysis;</li>
               <li>identify recurring issues and understand student experience within the Department of Chemistry;</li>
@@ -178,7 +190,9 @@ export function PrivacyNotice() {
             </p>
             <p>
               The website is delivered through Cloudflare, which may process limited network and security data to serve
-              pages and protect the Service. Links to third-party websites are governed by those websites&apos; own notices.
+              pages and protect the Service. Immutable email export records are stored in a Cloudflare D1 database
+              configured for the European Union jurisdiction. Links to third-party websites are governed by those
+              websites&apos; own notices.
             </p>
           </PolicySection>
 
@@ -187,6 +201,19 @@ export function PrivacyNotice() {
               Access to identifiable form responses is limited to authorised Student Representatives and, where
               necessary, authorised University or Students&apos; Union personnel who need the information for the stated
               purpose. We may share:
+            </p>
+            <p>
+              Authorised Mail System users may search archive metadata by message number or SHA-256 and inspect a
+              read-only backup where this is necessary for authenticity verification, accountability or investigation.
+              The Service provides no archive-editing interface. Only the account
+              <strong> ziwen.mu@chemvault.science</strong> is permitted by the server to delete an archive record; other
+              authorised users cannot delete records.
+            </p>
+            <p>
+              Anyone with the message number and short verification code printed in an announcement may use the public
+              verification page. The check returns only whether the pair matches an immutable archive and, for a valid
+              match, when it was first archived. An invalid response does not reveal whether the number, the code or both
+              were incorrect, and the public service never returns the email HTML, full SHA-256 or submitter identity.
             </p>
             <ul>
               <li>aggregated or anonymised findings with students, Department staff, the University or the Students&apos; Union;</li>
@@ -214,6 +241,7 @@ export function PrivacyNotice() {
           <PolicySection number="09" title="Retention and deletion">
             <ul>
               <li>Mail drafts remain in local browser storage until the user resets the template, clears site data or removes them from that device.</li>
+              <li>Immutable email export backups are reviewed at least annually and are normally retained for no longer than six years, where necessary to verify formal announcements, investigate misuse and maintain an accountable communications record. A record may be retained longer where a legal, safeguarding, complaint or active-investigation requirement applies.</li>
               <li>Survey and questionnaire responses are normally retained for no longer than two years after the relevant form closes, then securely deleted or irreversibly anonymised.</li>
               <li>Contact details collected only for follow-up are removed when follow-up is complete and normally within twelve months.</li>
               <li>A form-specific notice may set a shorter period or, where justified, a longer period required by law, safeguarding, an active complaint or formal University or Students&apos; Union records policy.</li>
@@ -228,13 +256,19 @@ export function PrivacyNotice() {
               identify a personal-data incident, it will be escalated through the appropriate University or Students&apos;
               Union process and notified where required.
             </p>
+            <p>
+              Email backups are write-once records: the database rejects updates and the Service exposes no modification
+              operation. Access requires the Mail System permission in ChemVault User System, and the delete endpoint
+              separately checks the authenticated email against the sole authorised archive owner.
+            </p>
           </PolicySection>
 
           <PolicySection number="11" title="Cookies, local storage and similar technologies">
             <p>
               The Mail System uses local browser storage to preserve an editor draft and preferences. It is necessary for
-              the editor&apos;s save-and-restore function and is not used for cross-site advertising. We do not currently set
-              marketing or behavioural advertising cookies. Cloudflare or Microsoft may use strictly necessary security,
+              the editor&apos;s save-and-restore function and is not used for cross-site advertising. It also uses a secure,
+              host-only authentication handoff cookie so ChemVault User System can verify the signed-in account. We do
+              not currently set marketing or behavioural advertising cookies. Cloudflare or Microsoft may use strictly necessary security,
               authentication or service technologies under their own notices. Blocking local storage may prevent draft
               saving; blocking Microsoft&apos;s necessary technologies may prevent a form from working correctly.
             </p>

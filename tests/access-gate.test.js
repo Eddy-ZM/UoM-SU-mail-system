@@ -20,6 +20,9 @@ test("privacy notice and compiled assets stay public while editor entries stay p
   assert.equal(isPublicRequestPath("/agreement/privacy-notice/"), true);
   assert.equal(isPublicRequestPath("/agreement/privacy-notice"), true);
   assert.equal(isPublicRequestPath("/assets/index-a1b2.js"), true);
+  assert.equal(isPublicRequestPath("/verify/"), true);
+  assert.equal(isPublicRequestPath("/api/verification"), true);
+  assert.equal(isPublicRequestPath("/api/verification/private"), false);
   assert.equal(isPublicRequestPath("/agreement/privacy-notice-hidden"), false);
   assert.equal(isPublicRequestPath("/"), false);
   assert.equal(isPublicRequestPath("/index.html"), false);

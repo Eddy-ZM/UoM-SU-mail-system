@@ -1,0 +1,9 @@
+name = "uom-su-mail-system"
+pages_build_output_dir = "./dist"
+compatibility_date = "2026-07-18"
+
+[[d1_databases]]
+binding = "ARCHIVE_DB"
+database_name = "uom-su-mail-archive"
+database_id = "e39c4102-d99c-423b-b991-0e947fa49e35"
+migrations_dir = "db/migrations"
