@@ -37,6 +37,87 @@ export const PROTECTED_SECTIONS = [
   { id: "system-credit", label: "Student Representative Mail System credit" },
 ];
 
+const EMAIL_LAYOUT_GUARDS = [
+  {
+    selector: 'body > table[role="presentation"]',
+    label: "Page-width email background",
+    attributes: ["width", "cellspacing", "cellpadding", "border"],
+    styles: ["width", "min-width", "max-width", "margin", "padding", "display", "table-layout", "background-color"],
+  },
+  {
+    selector: 'body > table[role="presentation"] > tbody > tr > td',
+    label: "Centred email wrapper",
+    attributes: ["width", "align", "colspan", "rowspan"],
+    styles: ["width", "min-width", "max-width", "margin", "padding", "display", "float", "position"],
+  },
+  {
+    selector: ".email-shell",
+    label: "Main email width",
+    attributes: ["width", "cellspacing", "cellpadding", "border", "align"],
+    styles: ["width", "min-width", "max-width", "margin", "padding", "display", "float", "position", "table-layout", "background-color"],
+  },
+  {
+    selector: ".email-shell > tbody > tr:first-child > td",
+    label: "Top accent bar",
+    attributes: ["width", "height", "align", "colspan", "rowspan"],
+    styles: ["width", "min-width", "max-width", "height", "margin", "padding", "display", "float", "position", "background-color"],
+  },
+  {
+    selector: '[data-protected-section="brand-header"] > td',
+    label: "University header container",
+    attributes: ["width", "align", "colspan", "rowspan"],
+    styles: ["width", "min-width", "max-width", "margin", "padding", "display", "float", "position", "background-color", "border-bottom"],
+  },
+  {
+    selector: '[data-protected-section="brand-header"] > td > table',
+    label: "University header columns",
+    attributes: ["width", "cellspacing", "cellpadding", "border", "align"],
+    styles: ["width", "min-width", "max-width", "margin", "padding", "display", "float", "position", "table-layout"],
+  },
+  {
+    selector: ".email-shell > tbody > tr:nth-child(3) > td",
+    label: "Announcement heading container",
+    attributes: ["width", "align", "colspan", "rowspan"],
+    styles: ["width", "min-width", "max-width", "margin", "padding", "display", "float", "position", "background-color"],
+  },
+  {
+    selector: 'tr[data-email-module="details"] > td',
+    label: "Information section container",
+    attributes: ["width", "align", "colspan", "rowspan"],
+    styles: ["width", "min-width", "max-width", "margin", "padding", "display", "float", "position", "background-color"],
+  },
+  {
+    selector: ".email-body-content",
+    label: "Main content column",
+    attributes: ["width", "align", "colspan", "rowspan"],
+    styles: ["width", "min-width", "max-width", "margin", "padding", "display", "float", "position", "background-color"],
+  },
+  {
+    selector: 'tr[data-email-module="contacts"] > td',
+    label: "Contact section container",
+    attributes: ["width", "align", "colspan", "rowspan"],
+    styles: ["width", "min-width", "max-width", "margin", "padding", "display", "float", "position", "background-color", "border-top"],
+  },
+  {
+    selector: '[data-protected-section="institution-footer"] > td',
+    label: "Department footer layout",
+    attributes: ["width", "align", "colspan", "rowspan"],
+    styles: ["width", "min-width", "max-width", "margin", "padding", "display", "float", "position", "background-color"],
+  },
+  {
+    selector: '[data-protected-section="safety-footer"] > td',
+    label: "Verification footer layout",
+    attributes: ["width", "align", "colspan", "rowspan"],
+    styles: ["width", "min-width", "max-width", "margin", "padding", "display", "float", "position", "background-color"],
+  },
+  {
+    selector: '[data-protected-section="system-credit"] > td',
+    label: "System credit layout",
+    attributes: ["width", "align", "colspan", "rowspan"],
+    styles: ["width", "min-width", "max-width", "margin", "padding", "display", "float", "position", "background-color"],
+  },
+];
+
 export const EMAIL_MODULES = [
   { id: "intro", label: "Opening copy", description: "Greeting and two introductory paragraphs." },
   { id: "details", label: "Information table", description: "Date, deadline, location or eligibility details." },
@@ -301,6 +382,60 @@ export function getProtectedContentIssues(html) {
   }
 
   return issues;
+}
+
+function normaliseLayoutValue(value) {
+  return String(value || "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+function layoutGuardMatches(current, canonical, guard) {
+  if (!current || !canonical || current.tagName !== canonical.tagName) return false;
+  const attributesMatch = guard.attributes.every((attribute) => (
+    normaliseLayoutValue(current.getAttribute(attribute)) === normaliseLayoutValue(canonical.getAttribute(attribute))
+  ));
+  if (!attributesMatch) return false;
+  return guard.styles.every((property) => (
+    normaliseLayoutValue(current.style.getPropertyValue(property)) === normaliseLayoutValue(canonical.style.getPropertyValue(property))
+    && current.style.getPropertyPriority(property) === canonical.style.getPropertyPriority(property)
+  ));
+}
+
+export function getEmailLayoutIssues(html, canonicalHtml) {
+  if (typeof html !== "string" || typeof canonicalHtml !== "string") return ["Core email layout"];
+  const doc = parseEmail(html);
+  const canonical = parseEmail(canonicalHtml);
+  return EMAIL_LAYOUT_GUARDS
+    .filter((guard) => !layoutGuardMatches(
+      doc.querySelector(guard.selector),
+      canonical.querySelector(guard.selector),
+      guard,
+    ))
+    .map((guard) => guard.label);
+}
+
+export function restoreEmailLayout(html, canonicalHtml) {
+  if (typeof html !== "string" || typeof canonicalHtml !== "string") return canonicalHtml;
+  const doc = parseEmail(html);
+  const canonical = parseEmail(canonicalHtml);
+
+  for (const guard of EMAIL_LAYOUT_GUARDS) {
+    const current = doc.querySelector(guard.selector);
+    const source = canonical.querySelector(guard.selector);
+    if (!current || !source || current.tagName !== source.tagName) return canonicalHtml;
+
+    guard.attributes.forEach((attribute) => {
+      const value = source.getAttribute(attribute);
+      if (value === null) current.removeAttribute(attribute);
+      else current.setAttribute(attribute, value);
+    });
+    guard.styles.forEach((property) => {
+      const value = source.style.getPropertyValue(property);
+      if (!value) current.style.removeProperty(property);
+      else current.style.setProperty(property, value, source.style.getPropertyPriority(property));
+    });
+  }
+
+  return `<!doctype html>\n${doc.documentElement.outerHTML}`;
 }
 
 export function restoreProtectedContent(html, canonicalHtml) {

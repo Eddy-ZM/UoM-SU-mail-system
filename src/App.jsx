@@ -7,6 +7,7 @@ import {
   applyEmailPreset,
   cleanEmailHtml,
   ensureHiddenCredit,
+  getEmailLayoutIssues,
   getEmailMetadata,
   getEmailModules,
   getProtectedContentIssues,
@@ -14,6 +15,7 @@ import {
   normaliseContactNames,
   removeContentBlock,
   repositionContentBlock,
+  restoreEmailLayout,
   restoreProtectedContent,
   serializeEmailDocument,
   updateEmailMetadata,
@@ -180,6 +182,8 @@ export function App({ currentUser }) {
   const [syncState, setSyncState] = useState("Visual and HTML are in sync");
   const [notice, setNotice] = useState("");
   const [codeError, setCodeError] = useState("");
+  const [layoutWarningOpen, setLayoutWarningOpen] = useState(false);
+  const [layoutWarningDismissed, setLayoutWarningDismissed] = useState(false);
   const [formatTargetReady, setFormatTargetReady] = useState(false);
   const [fontFamily, setFontFamily] = useState("Arial");
   const [fontSize, setFontSize] = useState("16");
@@ -200,10 +204,18 @@ export function App({ currentUser }) {
   const updateOrigin = useRef("initial");
   const noticeTimer = useRef(null);
   const archiveLockRef = useRef(false);
+  const lastLayoutSafeHtmlRef = useRef(
+    getEmailLayoutIssues(initialDraft.html, initialTemplate).length === 0 ? initialDraft.html : initialTemplate,
+  );
 
   const metadata = useMemo(() => getEmailMetadata(html), [html]);
   const modules = useMemo(() => getEmailModules(html), [html]);
   const protectionIssues = useMemo(() => getProtectedContentIssues(html), [html]);
+  const layoutIssues = useMemo(() => (
+    isUsableEmailHtml(html) && protectionIssues.length === 0
+      ? getEmailLayoutIssues(html, initialTemplate)
+      : []
+  ), [html, protectionIssues.length]);
   const archiveConfirmationDetails = useMemo(() => {
     if (!pendingArchiveOperation) return null;
     let messageNumber = "";
@@ -282,10 +294,13 @@ export function App({ currentUser }) {
     setExportBusy("");
     setHtml(identified.html);
     setPreviewHtml(identified.html);
+    lastLayoutSafeHtmlRef.current = identified.html;
     setSubject("Department of Chemistry Student Representatives | Student Feedback Forum");
     setFilename("manchester-chemistry-student-feedback-forum.html");
     setActivePreset(DEFAULT_PRESET_ID);
     setCodeError("");
+    setLayoutWarningOpen(false);
+    setLayoutWarningDismissed(false);
     setSyncState("Visual and HTML are in sync");
     setEditorPhase(EDITOR_PHASE.EDITING);
     try {
@@ -370,6 +385,11 @@ export function App({ currentUser }) {
   useEffect(() => {
     if (!canModifyDraft(editorPhase)) return undefined;
     if (updateOrigin.current === "visual") {
+      if (getEmailLayoutIssues(html, initialTemplate).length === 0) {
+        lastLayoutSafeHtmlRef.current = html;
+        setLayoutWarningOpen(false);
+        setLayoutWarningDismissed(false);
+      }
       updateOrigin.current = "idle";
       return undefined;
     }
@@ -396,21 +416,30 @@ export function App({ currentUser }) {
         setSyncState("Required source metadata restored");
         return;
       }
+      const currentLayoutIssues = getEmailLayoutIssues(html, initialTemplate);
       setCodeError("");
       setPreviewHtml(html);
+      if (currentLayoutIssues.length > 0) {
+        setLayoutWarningOpen(!layoutWarningDismissed);
+        setSyncState("Layout may be damaged — editing remains available");
+        return;
+      }
+      lastLayoutSafeHtmlRef.current = html;
+      setLayoutWarningOpen(false);
+      setLayoutWarningDismissed(false);
       setSyncState("Visual and HTML are in sync");
     }, 420);
     return () => window.clearTimeout(timer);
   }, [editorPhase, html]);
 
   useEffect(() => {
-    if (!codeError && !pendingArchiveOperation) return undefined;
+    if (!codeError && !pendingArchiveOperation && !layoutWarningOpen) return undefined;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [codeError, pendingArchiveOperation]);
+  }, [codeError, layoutWarningOpen, pendingArchiveOperation]);
 
   useEffect(() => {
     if (!pendingArchiveOperation) return undefined;
@@ -422,6 +451,17 @@ export function App({ currentUser }) {
     document.addEventListener("keydown", cancelOnEscape);
     return () => document.removeEventListener("keydown", cancelOnEscape);
   }, [pendingArchiveOperation]);
+
+  useEffect(() => {
+    if (!layoutWarningOpen || codeError) return undefined;
+    const continueOnEscape = (event) => {
+      if (event.key !== "Escape") return;
+      setLayoutWarningOpen(false);
+      setLayoutWarningDismissed(true);
+    };
+    document.addEventListener("keydown", continueOnEscape);
+    return () => document.removeEventListener("keydown", continueOnEscape);
+  }, [codeError, layoutWarningOpen]);
 
   const handleFrameLoad = useCallback(() => {
     if (!canModifyDraft(editorPhase)) return;
@@ -863,9 +903,29 @@ export function App({ currentUser }) {
     setHtml(next);
     setPreviewHtml(next);
     setCodeError("");
+    setLayoutWarningOpen(false);
+    setLayoutWarningDismissed(false);
     setSyncState("Last valid email restored");
     showNotice("The last valid email has been restored");
   }, [previewHtml, showNotice]);
+
+  const continueWithLayoutWarning = useCallback(() => {
+    setLayoutWarningOpen(false);
+    setLayoutWarningDismissed(true);
+    setSyncState("Layout warning dismissed — editing remains available");
+  }, []);
+
+  const repairEmailLayout = useCallback(() => {
+    const next = restoreEmailLayout(html, lastLayoutSafeHtmlRef.current);
+    updateOrigin.current = "layout-recovery";
+    setHtml(next);
+    setPreviewHtml(next);
+    lastLayoutSafeHtmlRef.current = next;
+    setLayoutWarningOpen(false);
+    setLayoutWarningDismissed(false);
+    setSyncState("Outlook-safe email layout restored");
+    showNotice("The email layout has been repaired");
+  }, [html, showNotice]);
 
   const exportIsAllowed = useCallback(() => {
     if (!canModifyDraft(editorPhase) || archiveLockRef.current) return false;
@@ -1024,10 +1084,13 @@ export function App({ currentUser }) {
     const identified = ensureMessageNumber(initialTemplate, { forceNew: true });
     setHtml(identified.html);
     setPreviewHtml(identified.html);
+    lastLayoutSafeHtmlRef.current = identified.html;
     setSubject("Department of Chemistry Student Representatives | Student Feedback Forum");
     setFilename("manchester-chemistry-student-feedback-forum.html");
     setActivePreset(DEFAULT_PRESET_ID);
     setCodeError("");
+    setLayoutWarningOpen(false);
+    setLayoutWarningDismissed(false);
     showNotice("Template reset");
   };
 
@@ -1344,15 +1407,22 @@ export function App({ currentUser }) {
               <p>Code edits refresh the preview after a short pause.</p>
             </div>
           </div>
-          {codeError && (
-            <div className="code-error" role="alert">
+            {codeError && (
+              <div className="code-error" role="alert">
               <span>{codeError}</span>
               {protectionIssues.length > 0 && (
                 <button type="button" onClick={restoreBrokenHtml}>Restore protected content</button>
               )}
-            </div>
-          )}
-          <textarea
+              </div>
+            )}
+            {!codeError && layoutIssues.length > 0 && (
+              <div className="code-layout-warning" role="status">
+                <strong>Layout check needs attention</strong>
+                <span>The email remains editable. {layoutIssues.join(", ")} may no longer be Outlook-safe.</span>
+                <button type="button" onClick={repairEmailLayout}>Repair layout</button>
+              </div>
+            )}
+            <textarea
             className="code-editor"
             aria-label="Email HTML code"
             spellCheck="false"
@@ -1431,6 +1501,26 @@ export function App({ currentUser }) {
           )}
           <button type="button" onClick={restoreBrokenHtml} autoFocus>Restore and continue</button>
           <small>This warning cannot be dismissed. The editor will reopen only after the last valid structure has been restored.</small>
+        </section>
+      </div>
+    )}
+    {layoutWarningOpen && !codeError && (
+      <div className="layout-warning-overlay" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && continueWithLayoutWarning()}>
+        <section className="layout-warning-dialog" role="dialog" aria-modal="true" aria-labelledby="layout-warning-title" aria-describedby="layout-warning-description">
+          <p className="layout-warning-kicker">EMAIL LAYOUT CHECK</p>
+          <h2 id="layout-warning-title">The email layout may be damaged</h2>
+          <p id="layout-warning-description" className="layout-warning-lead">
+            One or more width, spacing or table settings no longer match the Outlook-safe layout. You can repair the layout now or continue editing without restoring it.
+          </p>
+          <div className="layout-warning-issues" role="status">
+            <strong>Layout areas affected</strong>
+            <ul>{layoutIssues.map((issue) => <li key={issue}>{issue}</li>)}</ul>
+          </div>
+          <div className="layout-warning-actions">
+            <button type="button" onClick={continueWithLayoutWarning}>Continue editing</button>
+            <button type="button" onClick={repairEmailLayout} autoFocus>Repair layout</button>
+          </div>
+          <small>Repair keeps the current email content where possible and restores the last layout-safe structure if a required container is missing.</small>
         </section>
       </div>
     )}
