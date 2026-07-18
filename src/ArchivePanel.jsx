@@ -187,6 +187,16 @@ export function ArchivePanel({
     }
   };
 
+  const handleQueryChange = (event) => {
+    const nextQuery = event.target.value;
+    const searchWasCleared = query.length > 0 && nextQuery.length === 0;
+    setQuery(nextQuery);
+    if (searchWasCleared) {
+      setSelected(null);
+      void refresh("");
+    }
+  };
+
   const panel = (
     <section
       className={`archive-panel ${variant === "page" ? "archive-panel--page" : ""}`.trim()}
@@ -210,7 +220,7 @@ export function ArchivePanel({
         <form className="archive-search" onSubmit={(event) => { event.preventDefault(); setSelected(null); void refresh(query); }}>
           <label htmlFor="archive-search">Search by email subject, message number, verification code or SHA-256</label>
           <div>
-            <input id="archive-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Email subject, CHEM-SR-A1B2C3D4 or hash" />
+            <input id="archive-search" value={query} onChange={handleQueryChange} placeholder="Email subject, CHEM-SR-A1B2C3D4 or hash" />
             <button type="submit">Search</button>
           </div>
         </form>
