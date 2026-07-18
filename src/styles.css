@@ -2100,33 +2100,423 @@ button {
   min-height: 100vh;
   display: grid;
   place-items: center;
-  padding: 28px;
-  background: radial-gradient(circle at 50% 8%, rgba(102, 0, 153, .13), transparent 36%), #e9ebf1;
+  padding: clamp(22px, 5vw, 64px);
+  color: #262028;
+  background: #e8e8ed;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
-.verify-card {
-  width: min(620px, 100%);
-  padding: clamp(28px, 6vw, 54px);
+.verify-shell {
+  width: min(1000px, 100%);
+  overflow: hidden;
   background: #fff;
   border-top: 6px solid #660099;
-  box-shadow: 0 20px 52px rgba(43, 37, 48, .17);
+  box-shadow: 0 22px 52px rgba(32, 27, 36, .14);
 }
 
-.verify-kicker { margin: 0 0 14px; color: #660099; font-size: 10px; font-weight: 850; letter-spacing: 1.4px; }
-.verify-card h1 { margin: 0; color: #241c28; font: 500 clamp(34px, 7vw, 52px)/1.05 Georgia, serif; }
-.verify-lead { margin: 18px 0 28px; color: #5f5663; font-size: 15px; line-height: 1.65; }
-.verify-card form { display: grid; gap: 8px; }
-.verify-card form label { margin-top: 9px; color: #4c414f; font-size: 11px; font-weight: 800; }
-.verify-card form input { min-height: 46px; padding: 0 13px; color: #2b2430; background: #fbfafc; border: 1px solid #d5cdd8; border-radius: 4px; font: 700 13px/1.4 "Cascadia Code", Consolas, monospace; text-transform: uppercase; }
-.verify-card form input:focus { outline: 3px solid rgba(102,0,153,.18); border-color: #660099; }
-.verify-card form button { min-height: 46px; margin-top: 12px; color: #fff; background: #660099; border: 1px solid #660099; border-radius: 4px; font-weight: 800; }
-.verify-card form button:disabled { opacity: .58; }
-.verify-result { display: none; margin-top: 22px; padding: 17px 18px; border-left: 5px solid; }
-.verify-result.valid, .verify-result.invalid, .verify-result.unavailable { display: grid; gap: 5px; }
+.verify-masthead {
+  min-height: 126px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 36px;
+  padding: 20px clamp(28px, 5vw, 52px);
+  border-bottom: 1px solid #d6d2d8;
+}
+
+.verify-university-brand {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.verify-university-brand img {
+  width: 230px;
+  height: auto;
+  display: block;
+}
+
+.verify-department {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-left: 28px;
+  text-align: right;
+  border-left: 1px solid #c9c3cc;
+}
+
+.verify-department span {
+  color: #5f5663;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .35px;
+}
+
+.verify-department strong {
+  color: #2c2630;
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.verify-service-strip {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  padding: 9px clamp(28px, 5vw, 52px);
+  color: #fff;
+  background: #2b2530;
+  border-bottom: 4px solid #660099;
+  font-size: 11px;
+  letter-spacing: .25px;
+}
+
+.verify-service-strip strong {
+  color: #ffcc33;
+  font-size: 10px;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+}
+
+.verify-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(260px, .8fr);
+  gap: clamp(34px, 5vw, 58px);
+  padding: clamp(42px, 6vw, 68px) clamp(28px, 6vw, 64px);
+}
+
+.verify-primary {
+  min-width: 0;
+}
+
+.verify-kicker {
+  margin: 0 0 14px;
+  color: #660099;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 1.5px;
+}
+
+.verify-primary h1 {
+  max-width: 620px;
+  margin: 0;
+  color: #241f26;
+  font-size: clamp(36px, 5.5vw, 58px);
+  font-weight: 650;
+  line-height: 1.02;
+  letter-spacing: -1.8px;
+}
+
+.verify-lead {
+  max-width: 620px;
+  margin: 20px 0 32px;
+  color: #5f5663;
+  font-size: 15px;
+  line-height: 1.68;
+}
+
+.verify-form {
+  display: grid;
+  gap: 20px;
+}
+
+.verify-field {
+  display: grid;
+  gap: 6px;
+}
+
+.verify-field label {
+  color: #302832;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.verify-field > span {
+  color: #786f7c;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.verify-field input {
+  width: 100%;
+  min-height: 52px;
+  box-sizing: border-box;
+  margin-top: 2px;
+  padding: 0 15px;
+  color: #2b2430;
+  background: #fbfafc;
+  border: 1px solid #bdb6c1;
+  border-radius: 2px;
+  font: 700 14px/1.4 "Cascadia Code", Consolas, monospace;
+  letter-spacing: .2px;
+  text-transform: uppercase;
+}
+
+.verify-field input:focus {
+  outline: 3px solid rgba(102, 0, 153, .18);
+  outline-offset: 1px;
+  border-color: #660099;
+}
+
+.verify-form > button {
+  min-height: 52px;
+  margin-top: 2px;
+  color: #fff;
+  background: #660099;
+  border: 1px solid #660099;
+  border-radius: 2px;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: .15px;
+}
+
+.verify-form > button:hover:not(:disabled) {
+  background: #52007b;
+  border-color: #52007b;
+}
+
+.verify-form > button:focus-visible {
+  outline: 3px solid rgba(102, 0, 153, .22);
+  outline-offset: 3px;
+}
+
+.verify-form > button:disabled {
+  cursor: wait;
+  opacity: .58;
+}
+
+.verify-result {
+  display: none;
+  margin-top: 22px;
+  padding: 17px 18px;
+  border-left: 5px solid;
+}
+
+.verify-result.valid,
+.verify-result.invalid,
+.verify-result.unavailable {
+  display: grid;
+  gap: 5px;
+}
+
 .verify-result.valid { color: #174e36; background: #e8f7ef; border-color: #26845c; }
 .verify-result.invalid { color: #6f2c25; background: #fff0ed; border-color: #bd5a4e; }
 .verify-result.unavailable { color: #5d4b1d; background: #fff8df; border-color: #c59b2f; }
 .verify-result strong { font-size: 15px; }
-.verify-result span, .verify-result small { font-size: 11px; line-height: 1.55; }
-.verify-privacy { margin: 24px 0 0; color: #786f7c; font-size: 10px; line-height: 1.6; }
-.verify-privacy a { color: #660099; font-weight: 750; }
+.verify-result span,
+.verify-result small { font-size: 11px; line-height: 1.55; }
+
+.verify-guidance {
+  align-self: start;
+  padding: 26px 0 0 28px;
+  border-left: 1px solid #cbc5ce;
+}
+
+.verify-guidance > p:first-child {
+  margin: 0 0 10px;
+  color: #660099;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 1.3px;
+}
+
+.verify-guidance h2 {
+  margin: 0;
+  color: #2e2731;
+  font-size: 21px;
+  line-height: 1.28;
+  letter-spacing: -.3px;
+}
+
+.verify-guidance > p:not(:first-child) {
+  margin: 14px 0 22px;
+  color: #655b69;
+  font-size: 13px;
+  line-height: 1.62;
+}
+
+.verify-guidance ol {
+  display: grid;
+  gap: 15px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.verify-guidance li {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 10px;
+}
+
+.verify-guidance li > span {
+  color: #660099;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.verify-guidance li div {
+  display: grid;
+  gap: 3px;
+}
+
+.verify-guidance li strong {
+  color: #332b36;
+  font-size: 11px;
+}
+
+.verify-guidance li small {
+  color: #746b78;
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
+.verify-guidance dl {
+  margin: 25px 0 0;
+  border-top: 1px solid #d3cdd6;
+}
+
+.verify-guidance dl div {
+  padding: 10px 0;
+  border-bottom: 1px solid #d3cdd6;
+}
+
+.verify-guidance dt,
+.verify-guidance dd {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.verify-guidance dt {
+  color: #766c7a;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.verify-guidance dd {
+  margin-top: 3px;
+  color: #3f3642;
+}
+
+.verify-footer {
+  display: grid;
+  grid-template-columns: 1.5fr auto;
+  gap: 10px 28px;
+  padding: 22px clamp(28px, 5vw, 52px);
+  color: #d8d0dc;
+  background: #211b24;
+  border-top: 4px solid #660099;
+  font-size: 10.5px;
+  line-height: 1.55;
+}
+
+.verify-footer > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.verify-footer strong {
+  color: #fff;
+  font-size: 11px;
+}
+
+.verify-footer nav {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.verify-footer a {
+  color: #ffcc33;
+  font-weight: 750;
+  text-underline-offset: 2px;
+}
+
+.verify-footer p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #aaa0af;
+}
+
+@media (max-width: 780px) {
+  .verify-masthead {
+    min-height: 0;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .verify-university-brand img {
+    width: 205px;
+  }
+
+  .verify-department {
+    padding: 0;
+    text-align: left;
+    border-left: 0;
+  }
+
+  .verify-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .verify-guidance {
+    padding: 26px 0 0;
+    border-top: 1px solid #cbc5ce;
+    border-left: 0;
+  }
+}
+
+@media (max-width: 540px) {
+  .verify-page {
+    display: block;
+    padding: 0;
+  }
+
+  .verify-shell {
+    width: 100%;
+    min-height: 100vh;
+    box-shadow: none;
+  }
+
+  .verify-masthead,
+  .verify-service-strip,
+  .verify-layout,
+  .verify-footer {
+    padding-right: 22px;
+    padding-left: 22px;
+  }
+
+  .verify-service-strip {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .verify-primary h1 {
+    font-size: 38px;
+    letter-spacing: -1.1px;
+  }
+
+  .verify-layout {
+    padding-top: 38px;
+    padding-bottom: 44px;
+  }
+
+  .verify-footer {
+    grid-template-columns: 1fr;
+  }
+
+  .verify-footer nav {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .verify-footer p {
+    grid-column: auto;
+  }
+}
