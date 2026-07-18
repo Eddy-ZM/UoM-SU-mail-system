@@ -252,7 +252,7 @@ export function getProtectedContentIssues(html) {
     const primaryMessageNumber = brand?.querySelector('[data-message-number="true"]')?.textContent.trim() || "";
     const verificationLink = safetyFooter.querySelector('a[href="https://uom-su-mail-system.pages.dev/verify/"]');
     const text = safetyFooter.textContent.replace(/\s+/g, " ").trim();
-    if (!privacyLink || !verificationCode || footerMessageNumber !== primaryMessageNumber || !verificationLink || !text.includes("Verification code") || !text.includes("send both values to any member of the Student Representatives Team") || !text.includes("may access and analyse your submission")) {
+    if (!privacyLink || !verificationCode || footerMessageNumber !== primaryMessageNumber || !verificationLink || !text.includes("Verification code") || !text.includes("contact a Student Representative") || !text.includes("Submitted form responses may be analysed by the Student Representatives Team")) {
       issues.push(PROTECTED_SECTIONS[2].label);
     }
   }
