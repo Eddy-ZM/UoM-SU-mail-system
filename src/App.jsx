@@ -3,7 +3,6 @@ import initialTemplate from "./templates/student-union-announcement.html?raw";
 import {
   CONTENT_BLOCK_TYPES,
   EMAIL_MODULES,
-  PROTECTED_SECTIONS,
   addContentBlock,
   applyEmailPreset,
   cleanEmailHtml,
@@ -453,8 +452,6 @@ export function App({ currentUser }) {
       .mail-studio-list-point-control button { height: 22px !important; margin: 0 !important; padding: 0 6px !important; color: #8b3232 !important; background: #ffffff !important; border: 1px solid #d2c7d7 !important; border-radius: 3px !important; cursor: pointer !important; font: 700 9px/20px Arial, sans-serif !important; white-space: nowrap !important; }
       .mail-studio-list-point-control button:hover { color: #660099 !important; border-color: #9e6db2 !important; }
       .mail-studio-list-point-control button:disabled { cursor: not-allowed !important; opacity: .35 !important; }
-      .mail-studio-protected-toolbar { background: #fff8e8 !important; border-color: #e2ce91 !important; color: #5c4c25 !important; }
-      .mail-studio-protected-toolbar .locked-badge { color: #7d5d00 !important; font-size: 9px !important; font-weight: 800 !important; letter-spacing: .4px !important; text-transform: uppercase !important; }
       .mail-studio-drop-zone { height: 5px !important; margin: 0 !important; border: 1px dashed transparent !important; border-radius: 4px !important; transition: height 100ms ease, background-color 100ms ease, border-color 100ms ease !important; }
       body.mail-studio-dragging .mail-studio-drop-zone { height: 24px !important; margin: 3px 0 !important; background: rgba(102,0,153,.07) !important; border-color: rgba(102,0,153,.38) !important; }
       body.mail-studio-dragging .mail-studio-drop-zone::after { display: block !important; color: #660099 !important; content: 'Drop component here' !important; font: 700 9px/22px Arial, sans-serif !important; text-align: center !important; }
@@ -707,28 +704,6 @@ export function App({ currentUser }) {
       if (isListBlock) addListPointControls(block, blockLabel);
     });
     if (bodyContent) bodyContent.appendChild(createDropZone());
-
-    PROTECTED_SECTIONS.forEach((section) => {
-      const protectedSection = doc.querySelector(`[data-protected-section="${section.id}"]`);
-      const destination = protectedSection?.matches("tr") ? protectedSection.querySelector("td") : protectedSection;
-      if (!destination) return;
-      const toolbar = doc.createElement("div");
-      toolbar.dataset.mailStudioEditorOnly = "true";
-      toolbar.dataset.mailStudioProtectedToolbar = section.id;
-      toolbar.className = "mail-studio-block-toolbar mail-studio-protected-toolbar";
-      toolbar.contentEditable = "false";
-      const badge = doc.createElement("span");
-      badge.className = "locked-badge";
-      badge.textContent = "Locked";
-      const label = doc.createElement("span");
-      label.className = "block-label";
-      label.textContent = section.label;
-      const remove = createControlButton("Delete", `Delete ${section.label}`, () => {
-        showNotice(`${section.label} is protected and cannot be deleted`);
-      }, "delete-control");
-      toolbar.append(badge, label, remove);
-      destination.prepend(toolbar);
-    });
 
     doc.addEventListener("dragend", clearDragState);
 
