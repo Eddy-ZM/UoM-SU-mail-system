@@ -76,7 +76,7 @@ function readSelectionFormatting(doc, range) {
   const textAlign = computed?.textAlign || "left";
   const familyValue = computed?.fontFamily || "";
   const family = FONT_FAMILIES.find((font) => familyValue.toLowerCase().includes(font.toLowerCase())) || "Arial";
-  const size = Math.round(Number.parseFloat(computed?.fontSize || "16"));
+  const size = Math.round(Number.parseFloat(computed?.fontSize || "12"));
   const alignment = commandState(doc, "justifyCenter") || textAlign === "center"
     ? "center"
     : commandState(doc, "justifyRight") || textAlign === "right" || textAlign === "end"
@@ -89,7 +89,7 @@ function readSelectionFormatting(doc, range) {
     underline: commandState(doc, "underline") || decoration.includes("underline"),
     alignment,
     fontFamily: family,
-    fontSize: String(Number.isFinite(size) ? size : 16),
+    fontSize: String(Number.isFinite(size) ? size : 12),
     textColor: cssColourToHex(computed?.color),
   };
 }
@@ -197,7 +197,7 @@ export function App({ currentUser }) {
   const [layoutWarningDismissed, setLayoutWarningDismissed] = useState(false);
   const [formatTargetReady, setFormatTargetReady] = useState(false);
   const [fontFamily, setFontFamily] = useState("Arial");
-  const [fontSize, setFontSize] = useState("16");
+  const [fontSize, setFontSize] = useState("12");
   const [textColor, setTextColor] = useState("#2b2430");
   const [activeFormats, setActiveFormats] = useState(DEFAULT_ACTIVE_FORMATS);
   const [currentTime, setCurrentTime] = useState(() => new Date());

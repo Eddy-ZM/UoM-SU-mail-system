@@ -4,9 +4,20 @@ import { readFileSync } from "node:fs";
 import { hasCompleteEmailDocumentStructure } from "../src/emailUtils.js";
 
 const template = readFileSync(new URL("../src/templates/student-union-announcement.html", import.meta.url), "utf8");
+const emailUtilsSource = readFileSync(new URL("../src/emailUtils.js", import.meta.url), "utf8");
 
 test("the production email template has a complete balanced document structure", () => {
   assert.equal(hasCompleteEmailDocumentStructure(template), true);
+});
+
+test("the template and newly added components use the compact 12-pixel body scale", () => {
+  assert.match(template, /class="mobile-pad email-body-content"[^>]*font-size:12px; line-height:20px;/);
+  assert.match(template, /class="fact-value"[^>]*font-size:12px; line-height:19px;/);
+  assert.match(template, /class="key-point-row"[\s\S]*?font-size:12px; line-height:20px;/);
+  assert.match(template, /class="headline"[^>]*font-size:26px; line-height:34px;/);
+  assert.doesNotMatch(template, /font-size:(?:14|15|17|18|28|34)px/);
+  assert.match(emailUtilsSource, /data-content-block-type="paragraph"[\s\S]*?font-size:12px; line-height:20px;/);
+  assert.doesNotMatch(emailUtilsSource, /font-size:(?:14|15|20)px/);
 });
 
 test("the mail-system credit is a protected final row outside the purple footer", () => {
