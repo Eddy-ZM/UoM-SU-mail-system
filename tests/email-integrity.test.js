@@ -2,9 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import {
+  SHA256_PLACEHOLDER,
   VERIFICATION_CODE_PLACEHOLDER,
   canonicalizeEmailHtml,
   ensureMessageNumber,
+  extractEmbeddedSha256,
+  extractIntegrityMetadata,
   extractMessageNumber,
   extractVerificationCode,
   prepareEmailForArchive,
@@ -16,7 +19,7 @@ const baseEmail = `<!doctype html><html><body>
 <div>No. <span data-message-number="true">CHEM-SR-A1B2C3D4</span></div>
 <p>Formal announcement</p>
 <div>Code: <span data-verification-code="true">${VERIFICATION_CODE_PLACEHOLDER}</span></div>
-</body></html>`;
+</body><!-- SRMS-METADATA message-number="CHEM-SR-A1B2C3D4" sha256="${SHA256_PLACEHOLDER}" --></html>`;
 
 test("message numbers use four secure random bytes as eight uppercase hexadecimal digits", () => {
   const randomSource = { getRandomValues(bytes) { bytes.set([0, 15, 160, 255]); return bytes; } };
@@ -34,13 +37,18 @@ test("a saved draft with the all-zero placeholder receives a new random message 
   assert.equal(extractMessageNumber(result.html), "CHEM-SR-DEADBEEF");
 });
 
-test("archive hash stays internal while its first 64 bits form the displayed verification code", async () => {
+test("archive output embeds the full SHA-256 invisibly while its first 64 bits form the displayed verification code", async () => {
   const prepared = await prepareEmailForArchive(baseEmail);
   assert.match(prepared.sha256, /^[0-9A-F]{64}$/);
   assert.equal(prepared.verificationCode, verificationCodeFromSha256(prepared.sha256));
   assert.match(prepared.verificationCode, /^[0-9A-F]{4}(?:-[0-9A-F]{4}){3}$/);
   assert.equal(extractVerificationCode(prepared.html), prepared.verificationCode);
-  assert.equal(prepared.html.includes(prepared.sha256), false);
+  assert.equal(extractEmbeddedSha256(prepared.html), prepared.sha256);
+  assert.deepEqual(extractIntegrityMetadata(prepared.html), {
+    messageNumber: prepared.messageNumber,
+    sha256: prepared.sha256,
+  });
+  assert.match(prepared.html, /<!-- SRMS-METADATA message-number="CHEM-SR-[0-9A-F]{8}" sha256="[0-9A-F]{64}" -->/);
   assert.equal(canonicalizeEmailHtml(prepared.html), prepared.canonicalHtml);
   assert.equal(prepared.sha256, await sha256Hex(prepared.canonicalHtml));
 });
@@ -54,6 +62,7 @@ test("changing canonical content invalidates an existing verification code", asy
 
 test("integrity helpers reject missing or duplicate protected fields", async () => {
   await assert.rejects(() => prepareEmailForArchive(baseEmail.replace("data-verification-code", "data-removed-code")), /exactly one verification code/);
+  await assert.rejects(() => prepareEmailForArchive(baseEmail.replace(/<!-- SRMS-METADATA[\s\S]*?-->/, "")), /hidden integrity metadata/);
   assert.throws(() => extractMessageNumber(baseEmail.replace("</body>", '<span data-message-number="true">CHEM-SR-FFFFFFFF</span></body>')), /exactly one message number/);
 });
 
@@ -62,9 +71,9 @@ test("the production initial template can generate a message number and archive 
   const identified = ensureMessageNumber(template, { forceNew: true });
   const prepared = await prepareEmailForArchive(identified.html);
   assert.match(prepared.messageNumber, /^CHEM-SR-[0-9A-F]{8}$/);
-  assert.equal((prepared.html.match(new RegExp(prepared.messageNumber, "g")) || []).length, 2);
+  assert.equal((prepared.html.match(new RegExp(prepared.messageNumber, "g")) || []).length, 3);
   assert.match(prepared.verificationCode, /^[0-9A-F]{4}(?:-[0-9A-F]{4}){3}$/);
-  assert.equal(prepared.html.includes("data-message-hash"), false);
+  assert.equal(extractEmbeddedSha256(prepared.html), prepared.sha256);
 });
 
 test("a footer message-number reference must match the primary message number", async () => {

@@ -39,10 +39,12 @@ import {
 } from "./editorSession.js";
 import {
   ensureMessageNumber,
+  extractEmbeddedSha256,
   extractMessageNumber,
   extractVerificationCode,
   markVerificationCodePending,
   prepareEmailForArchive,
+  setEmbeddedSha256,
 } from "../shared/email-integrity.js";
 
 const FONT_FAMILIES = ["Arial", "Verdana", "Tahoma", "Georgia", "Times New Roman"];
@@ -424,20 +426,28 @@ export function App({ currentUser }) {
     if (!canModifyDraft(editorPhase)) return undefined;
     let cancelled = false;
     const timer = window.setTimeout(async () => {
-      let embedded;
+      let embedded = null;
+      let embeddedSha256 = null;
       try {
         embedded = extractVerificationCode(html);
       } catch {
-        return;
+        // Drafts keep the visible verification code pending until archive.
+      }
+      try {
+        embeddedSha256 = extractEmbeddedSha256(html);
+      } catch {
+        // A pending draft hash is refreshed below.
       }
       try {
         const current = await prepareEmailForArchive(cleanEmailHtml(html));
-        if (cancelled || current.verificationCode === embedded) return;
-        const pending = markVerificationCodePending(html);
+        const hashMatches = current.sha256 === embeddedSha256;
+        const codeMatches = embedded === null || current.verificationCode === embedded;
+        if (cancelled || (hashMatches && codeMatches)) return;
+        const pending = setEmbeddedSha256(markVerificationCodePending(html), current.sha256);
         updateOrigin.current = "integrity-stale";
         setHtml(pending);
         setPreviewHtml(pending);
-        setSyncState("Message changed; the verification code will be regenerated on export");
+        setSyncState("Message SHA-256 refreshed; the verification code will be generated on archive");
       } catch {
         // Existing validation reports malformed protected content separately.
       }

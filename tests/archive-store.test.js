@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createArchive, deleteArchive, listArchives, verifyArchivedMessage } from "../functions/_lib/archive-store.js";
-import { VERIFICATION_CODE_PLACEHOLDER, prepareEmailForArchive } from "../shared/email-integrity.js";
+import { SHA256_PLACEHOLDER, VERIFICATION_CODE_PLACEHOLDER, prepareEmailForArchive } from "../shared/email-integrity.js";
 
-const sourceEmail = `<!doctype html><html><body><span data-message-number="true">CHEM-SR-89ABCDEF</span><p>Archive me</p><span data-verification-code="true">${VERIFICATION_CODE_PLACEHOLDER}</span></body></html>`;
+const sourceEmail = `<!doctype html><html><body><span data-message-number="true">CHEM-SR-89ABCDEF</span><p>Archive me</p><span data-verification-code="true">${VERIFICATION_CODE_PLACEHOLDER}</span></body><!-- SRMS-METADATA message-number="CHEM-SR-89ABCDEF" sha256="${SHA256_PLACEHOLDER}" --></html>`;
 
 function recordingDb({ deleteChanges = 1 } = {}) {
   const calls = [];
@@ -51,13 +51,13 @@ test("the server recomputes SHA-256 and records verified submitter identity", as
 test("a forged embedded hash is rejected before any database write", async () => {
   const prepared = await prepareEmailForArchive(sourceEmail);
   const db = recordingDb();
-  const forged = prepared.html.replace(prepared.verificationCode, "AAAA-AAAA-AAAA-AAAA");
+  const forged = prepared.html.replace(prepared.sha256, "A".repeat(64));
   await assert.rejects(() => createArchive(db, {
     html: forged,
     subject: "Chemistry update",
     filename: "update.html",
     operation: "download_html",
-  }, { id: "u1", email: "rep@example.test", systemRole: "user" }), /does not match/);
+  }, { id: "u1", email: "rep@example.test", systemRole: "user" }), /hidden SHA-256 does not match/);
   assert.equal(db.calls.length, 0);
 });
 

@@ -1,5 +1,6 @@
 import {
   canonicalizeEmailHtml,
+  extractEmbeddedSha256,
   extractMessageNumber,
   extractVerificationCode,
   isValidMessageNumber,
@@ -62,10 +63,12 @@ export async function createArchive(db, payload, verifiedUser, options = {}) {
   const user = normalizedUser(verifiedUser);
 
   let messageNumber;
+  let submittedSha256;
   let submittedVerificationCode;
   let canonicalHtml;
   try {
     messageNumber = extractMessageNumber(html);
+    submittedSha256 = extractEmbeddedSha256(html);
     submittedVerificationCode = extractVerificationCode(html);
     canonicalHtml = canonicalizeEmailHtml(html);
   } catch (error) {
@@ -74,6 +77,9 @@ export async function createArchive(db, payload, verifiedUser, options = {}) {
 
   const computedSha256 = await sha256Hex(canonicalHtml, options.cryptoImplementation || globalThis.crypto);
   const verificationCode = verificationCodeFromSha256(computedSha256);
+  if (computedSha256 !== submittedSha256) {
+    throw new ArchiveValidationError("Email hidden SHA-256 does not match the submitted HTML.");
+  }
   if (verificationCode !== submittedVerificationCode) {
     throw new ArchiveValidationError("Email verification code does not match the submitted HTML.");
   }

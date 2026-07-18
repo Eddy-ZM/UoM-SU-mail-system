@@ -29,6 +29,12 @@ test("the mail-system credit is a protected final row outside the purple footer"
   assert.match(template, /data-protected-section="system-credit"[\s\S]*?<\/tr>\s*<\/table>\s*<\/td>/);
 });
 
+test("the source contains one invisible protected message-number and SHA-256 metadata record", () => {
+  assert.equal((template.match(/<!--\s*SRMS-METADATA\b/g) || []).length, 1);
+  assert.match(template, /<!-- SRMS-METADATA message-number="CHEM-SR-00000000" sha256="PENDING-SHA256" -->/);
+  assert.doesNotMatch(template, /data-message-hash/);
+});
+
 test("missing, duplicated or crossed structural tags are rejected", () => {
   assert.equal(hasCompleteEmailDocumentStructure(template.replace("</body>", "")), false);
   assert.equal(hasCompleteEmailDocumentStructure(template.replace("<body ", "<body><body ")), false);
