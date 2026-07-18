@@ -326,6 +326,10 @@ export function App({ currentUser }) {
 
   useEffect(() => {
     if (!canModifyDraft(editorPhase)) return undefined;
+    if (!isUsableEmailHtml(html) || protectionIssues.length > 0) {
+      setSaveState("Recovery required");
+      return undefined;
+    }
     setSaveState("Saving locally…");
     const timer = window.setTimeout(() => {
       try {
@@ -339,7 +343,7 @@ export function App({ currentUser }) {
       }
     }, 500);
     return () => window.clearTimeout(timer);
-  }, [activePreset, editorPhase, filename, html, subject]);
+  }, [activePreset, editorPhase, filename, html, protectionIssues.length, subject]);
 
   useEffect(() => {
     if (!canModifyDraft(editorPhase)) return undefined;
@@ -376,6 +380,15 @@ export function App({ currentUser }) {
     }, 420);
     return () => window.clearTimeout(timer);
   }, [editorPhase, html]);
+
+  useEffect(() => {
+    if (!codeError) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [codeError]);
 
   const handleFrameLoad = useCallback(() => {
     if (!canModifyDraft(editorPhase)) return;
@@ -833,15 +846,17 @@ export function App({ currentUser }) {
     }
   };
 
-  const restoreProtected = useCallback(() => {
-    const next = restoreProtectedContent(html, initialTemplate);
-    updateOrigin.current = "protected-restore";
+  const restoreBrokenHtml = useCallback(() => {
+    const next = isUsableEmailHtml(previewHtml) && getProtectedContentIssues(previewHtml).length === 0
+      ? previewHtml
+      : ensureMessageNumber(initialTemplate, { forceNew: true }).html;
+    updateOrigin.current = "integrity-recovery";
     setHtml(next);
     setPreviewHtml(next);
     setCodeError("");
-    setSyncState("Protected Manchester content restored");
-    showNotice("Protected Manchester content restored");
-  }, [html, showNotice]);
+    setSyncState("Last valid email restored");
+    showNotice("The last valid email has been restored");
+  }, [previewHtml, showNotice]);
 
   const exportIsAllowed = useCallback(() => {
     if (!canModifyDraft(editorPhase) || archiveLockRef.current) return false;
@@ -1047,7 +1062,8 @@ export function App({ currentUser }) {
   }
 
   return (
-    <div className="studio-shell">
+    <>
+    <div className="studio-shell" inert={Boolean(codeError) ? true : undefined}>
       <header className="studio-header">
         <div className="studio-brand">
           <div className="brand-kicker">THE UNIVERSITY OF MANCHESTER</div>
@@ -1302,7 +1318,7 @@ export function App({ currentUser }) {
             <div className="code-error" role="alert">
               <span>{codeError}</span>
               {protectionIssues.length > 0 && (
-                <button type="button" onClick={restoreProtected}>Restore protected content</button>
+                <button type="button" onClick={restoreBrokenHtml}>Restore protected content</button>
               )}
             </div>
           )}
@@ -1312,6 +1328,7 @@ export function App({ currentUser }) {
             spellCheck="false"
             value={html}
             onChange={handleCodeChange}
+            disabled={Boolean(codeError)}
           />
           <div className="code-footer">
             <span>{html.split("\n").length} lines</span>
@@ -1330,5 +1347,29 @@ export function App({ currentUser }) {
 
       {notice && <div className="toast" role="status" aria-live="polite">{notice}</div>}
     </div>
+    {codeError && (
+      <div className="html-recovery-overlay" role="dialog" aria-modal="true" aria-labelledby="html-recovery-title" aria-describedby="html-recovery-description">
+        <section className="html-recovery-dialog">
+          <p className="html-recovery-kicker">HTML INTEGRITY PROTECTION</p>
+          <h2 id="html-recovery-title">Restore the email before continuing</h2>
+          <p id="html-recovery-description" className="html-recovery-lead">
+            The HTML no longer contains a complete, protected Manchester email structure. Editing, preview and export have been locked to prevent a damaged announcement from being used.
+          </p>
+          <div className="html-recovery-error" role="alert">
+            <strong>Integrity check failed</strong>
+            <span>{codeError}</span>
+          </div>
+          {protectionIssues.length > 0 && (
+            <div className="html-recovery-issues">
+              <strong>Protected content affected</strong>
+              <ul>{protectionIssues.map((issue) => <li key={issue}>{issue}</li>)}</ul>
+            </div>
+          )}
+          <button type="button" onClick={restoreBrokenHtml} autoFocus>Restore and continue</button>
+          <small>This warning cannot be dismissed. The editor will reopen only after the last valid structure has been restored.</small>
+        </section>
+      </div>
+    )}
+    </>
   );
 }

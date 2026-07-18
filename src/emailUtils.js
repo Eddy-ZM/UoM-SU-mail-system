@@ -208,10 +208,38 @@ function removeUnsafeContent(doc) {
   });
 }
 
+export function hasCompleteEmailDocumentStructure(html) {
+  if (typeof html !== "string" || !/^\s*<!doctype\s+html[\s>]/i.test(html)) return false;
+  const source = html.replace(/<!--[\s\S]*?-->/g, "");
+  const structuralTags = new Set(["html", "head", "body", "table", "tbody", "tr", "td", "th"]);
+  const requiredTags = new Set(["html", "head", "body"]);
+  const openingCounts = new Map([...requiredTags].map((tag) => [tag, 0]));
+  const closingCounts = new Map([...requiredTags].map((tag) => [tag, 0]));
+  const stack = [];
+
+  for (const match of source.matchAll(/<(\/)?([a-z][a-z0-9-]*)\b[^>]*>/gi)) {
+    const tag = match[2].toLowerCase();
+    if (!structuralTags.has(tag)) continue;
+    if (match[1]) {
+      if (stack.at(-1) !== tag) return false;
+      stack.pop();
+      if (requiredTags.has(tag)) closingCounts.set(tag, closingCounts.get(tag) + 1);
+      continue;
+    }
+    stack.push(tag);
+    if (requiredTags.has(tag)) openingCounts.set(tag, openingCounts.get(tag) + 1);
+  }
+
+  return stack.length === 0 && [...requiredTags].every((tag) => (
+    openingCounts.get(tag) === 1 && closingCounts.get(tag) === 1
+  ));
+}
+
 export function isUsableEmailHtml(html) {
-  if (typeof html !== "string" || !/<html[\s>]/i.test(html) || !/<body[\s>]/i.test(html)) return false;
+  if (!hasCompleteEmailDocumentStructure(html)) return false;
   const doc = parseEmail(html);
-  return Boolean(doc.querySelector(".email-shell"));
+  const shells = doc.querySelectorAll(".email-shell");
+  return shells.length === 1 && shells[0].tagName === "TABLE";
 }
 
 export function getProtectedContentIssues(html) {

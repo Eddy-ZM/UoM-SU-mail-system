@@ -1117,6 +1117,116 @@ button {
   background: #ffeadf;
 }
 
+.html-recovery-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 24px;
+  background: rgba(24, 18, 27, 0.9);
+  backdrop-filter: blur(8px);
+}
+
+.html-recovery-dialog {
+  width: min(590px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: clamp(28px, 5vw, 46px);
+  color: #2b2530;
+  background: #ffffff;
+  border-top: 6px solid #660099;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+}
+
+.html-recovery-kicker {
+  margin: 0 0 12px;
+  color: #660099;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 1.6px;
+}
+
+.html-recovery-dialog h2 {
+  margin: 0;
+  color: #211b24;
+  font-size: clamp(28px, 5vw, 40px);
+  line-height: 1.08;
+  letter-spacing: -1px;
+}
+
+.html-recovery-lead {
+  margin: 18px 0 0;
+  color: #625968;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.html-recovery-error {
+  display: grid;
+  gap: 5px;
+  margin-top: 24px;
+  padding: 15px 17px;
+  color: #682f29;
+  background: #fff1ed;
+  border-left: 5px solid #a84438;
+}
+
+.html-recovery-error strong,
+.html-recovery-issues > strong {
+  font-size: 12px;
+}
+
+.html-recovery-error span,
+.html-recovery-issues li {
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.html-recovery-issues {
+  margin-top: 18px;
+  padding: 15px 17px;
+  background: #f5f1f7;
+  border: 1px solid #ded5e2;
+}
+
+.html-recovery-issues ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.html-recovery-dialog > button {
+  width: 100%;
+  min-height: 50px;
+  margin-top: 24px;
+  color: #ffffff;
+  background: #660099;
+  border: 1px solid #660099;
+  border-radius: 3px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.html-recovery-dialog > button:hover {
+  background: #52007b;
+}
+
+.html-recovery-dialog > button:focus-visible {
+  outline: 4px solid rgba(255, 204, 51, 0.8);
+  outline-offset: 4px;
+}
+
+.html-recovery-dialog > small {
+  display: block;
+  margin-top: 13px;
+  color: #766d79;
+  font-size: 10px;
+  line-height: 1.5;
+  text-align: center;
+}
+
 .code-editor {
   width: 100%;
   flex: 1;
