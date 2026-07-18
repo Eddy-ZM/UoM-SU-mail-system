@@ -23,7 +23,7 @@ import {
 import { DEFAULT_PRESET_ID, EMAIL_PRESETS, getPresetById } from "./emailPresets.js";
 import { ArchivePanel } from "./ArchivePanel.jsx";
 import { archiveEmailExport } from "./archiveClient.js";
-import { ArchivedSession, ArchiveProgress, WorkspaceChooser } from "./WorkspaceChooser.jsx";
+import { ArchivedSession, ArchiveProgress, ArchiveWorkspace, WorkspaceChooser } from "./WorkspaceChooser.jsx";
 import {
   EDITOR_PHASE,
   archiveReceiptFromExport,
@@ -979,6 +979,33 @@ export function App({ currentUser }) {
     showNotice("Template reset");
   };
 
+  if (editorPhase === EDITOR_PHASE.ARCHIVING) {
+    return <ArchiveProgress user={currentUser} />;
+  }
+
+  if (archiveOpen) {
+    const closeLabel = editorPhase === EDITOR_PHASE.EDITING
+      ? "Back to editor"
+      : editorPhase === EDITOR_PHASE.ARCHIVED
+        ? "Back to archive receipt"
+        : "Back to workspace";
+
+    return (
+      <>
+        <ArchiveWorkspace user={currentUser} onLogout={signOut} isLoggingOut={signingOut}>
+          <ArchivePanel
+            open
+            onClose={closeArchive}
+            initialArchiveId={archiveInitialId}
+            variant="page"
+            closeLabel={closeLabel}
+          />
+        </ArchiveWorkspace>
+        {notice && <div className="toast" role="status" aria-live="polite">{notice}</div>}
+      </>
+    );
+  }
+
   if (editorPhase === EDITOR_PHASE.CHOOSER) {
     return (
       <>
@@ -989,14 +1016,9 @@ export function App({ currentUser }) {
           onLogout={signOut}
           isLoggingOut={signingOut}
         />
-        <ArchivePanel open={archiveOpen} onClose={closeArchive} initialArchiveId={archiveInitialId} />
         {notice && <div className="toast" role="status" aria-live="polite">{notice}</div>}
       </>
     );
-  }
-
-  if (editorPhase === EDITOR_PHASE.ARCHIVING) {
-    return <ArchiveProgress user={currentUser} />;
   }
 
   if (editorPhase === EDITOR_PHASE.ARCHIVED && archiveReceipt) {
@@ -1011,7 +1033,6 @@ export function App({ currentUser }) {
           onLogout={signOut}
           isLoggingOut={signingOut}
         />
-        <ArchivePanel open={archiveOpen} onClose={closeArchive} initialArchiveId={archiveInitialId} />
         {notice && <div className="toast" role="status" aria-live="polite">{notice}</div>}
       </>
     );
@@ -1043,8 +1064,6 @@ export function App({ currentUser }) {
           <AppButton className="primary-light" onClick={downloadHtml} disabled={Boolean(exportBusy || codeError || protectionIssues.length)}>{exportBusy === "download_html" ? "Archiving..." : "Download HTML"}</AppButton>
         </div>
       </header>
-
-      <ArchivePanel open={archiveOpen} onClose={closeArchive} initialArchiveId={archiveInitialId} />
 
       <main className="studio-workspace">
         <aside className="settings-panel" aria-label="Email settings">

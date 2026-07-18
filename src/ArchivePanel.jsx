@@ -78,7 +78,13 @@ function downloadArchivedHtml(archive) {
   URL.revokeObjectURL(url);
 }
 
-export function ArchivePanel({ open, onClose, initialArchiveId = "" }) {
+export function ArchivePanel({
+  open,
+  onClose,
+  initialArchiveId = "",
+  variant = "overlay",
+  closeLabel = "Close",
+}) {
   const [query, setQuery] = useState("");
   const [records, setRecords] = useState([]);
   const [canDelete, setCanDelete] = useState(false);
@@ -181,15 +187,22 @@ export function ArchivePanel({ open, onClose, initialArchiveId = "" }) {
     }
   };
 
-  return (
-    <div className="archive-overlay" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <section className="archive-panel" role="dialog" aria-modal="true" aria-labelledby="archive-title">
+  const panel = (
+    <section
+      className={`archive-panel ${variant === "page" ? "archive-panel--page" : ""}`.trim()}
+      role={variant === "page" ? "region" : "dialog"}
+      aria-modal={variant === "page" ? undefined : "true"}
+      aria-labelledby="archive-title"
+    >
         <header className="archive-panel-header">
           <div>
             <p>IMMUTABLE AUDIT RECORDS</p>
             <h2 id="archive-title">Email backups</h2>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close email backups">Close</button>
+          <button className="archive-back" type="button" onClick={onClose} aria-label={`${closeLabel} from email backups`}>
+            <span aria-hidden="true">&#8592;</span>
+            {closeLabel}
+          </button>
         </header>
 
         <p className="archive-policy">Archived emails remain immutable. Their read-only preview and export tools are available to authorised team members for 24 hours from the first archive time.</p>
@@ -263,7 +276,14 @@ export function ArchivePanel({ open, onClose, initialArchiveId = "" }) {
             </details>
           </section>
         )}
-      </section>
+    </section>
+  );
+
+  if (variant === "page") return panel;
+
+  return (
+    <div className="archive-overlay" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      {panel}
     </div>
   );
 }

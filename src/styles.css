@@ -1184,6 +1184,32 @@ button {
   box-shadow: -20px 0 48px rgba(24, 18, 27, 0.28);
 }
 
+.archive-panel--page {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  padding: clamp(24px, 4vw, 46px);
+  overflow: visible;
+  background: rgba(244, 242, 245, 0.97);
+  border-top: 5px solid #660099;
+  border-left: 0;
+  box-shadow: 0 20px 48px rgba(43, 37, 48, 0.14);
+}
+
+.archive-panel--page .archive-policy {
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.archive-panel--page .archive-search label {
+  font-size: 13px;
+}
+
+.archive-panel--page .archive-search input {
+  font-size: 13px;
+}
+
 .archive-panel-header,
 .archive-detail-heading,
 .archive-record,
@@ -1226,6 +1252,18 @@ button {
   background: #fff;
   font-size: 11px;
   font-weight: 750;
+}
+
+.archive-panel .archive-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.archive-panel .archive-back span {
+  color: #660099;
+  font-size: 16px;
+  line-height: 1;
 }
 
 .archive-panel button:hover:not(:disabled) {
@@ -1314,10 +1352,34 @@ button {
   gap: 9px;
 }
 
+.archive-panel--page .archive-records {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .archive-record {
   padding: 15px;
   background: #fff;
   border: 1px solid #dcd6df;
+}
+
+.archive-panel--page .archive-record {
+  min-height: 190px;
+  padding: 18px;
+}
+
+.archive-panel--page .archive-record-main {
+  gap: 6px;
+}
+
+.archive-panel--page .archive-record-main strong {
+  font-size: 15px;
+}
+
+.archive-panel--page .archive-record-main span,
+.archive-panel--page .archive-record-main code {
+  font-size: 12px;
+  line-height: 17px;
 }
 
 .archive-record-main {
@@ -1448,6 +1510,39 @@ button {
   background: #fff;
   border: 1px solid #d8d1dc;
   border-radius: 4px;
+}
+
+.archive-panel--page .archive-detail {
+  margin-top: 28px;
+  padding: clamp(20px, 3vw, 30px);
+}
+
+.archive-panel--page .archive-detail-heading strong {
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.archive-panel--page .archive-detail-heading span,
+.archive-panel--page .archive-readonly-notice,
+.archive-panel--page .archive-detail dt,
+.archive-panel--page .archive-detail dd {
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.archive-panel--page .archive-preview {
+  height: min(760px, 72vh);
+  min-height: 560px;
+}
+
+@media (max-width: 900px) {
+  .archive-panel--page .archive-records {
+    grid-template-columns: 1fr;
+  }
+
+  .archive-panel--page .archive-record {
+    min-height: 0;
+  }
 }
 
 .archive-source {

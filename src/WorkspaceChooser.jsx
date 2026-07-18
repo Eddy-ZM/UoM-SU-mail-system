@@ -104,6 +104,23 @@ export function WorkspaceChooser({
   );
 }
 
+export function ArchiveWorkspace({
+  user,
+  children,
+  onLogout,
+  isLoggingOut = false,
+}) {
+  return (
+    <main className="workspace-chooser archive-workspace">
+      <WorkspaceHeader user={user} onLogout={onLogout} isLoggingOut={isLoggingOut} />
+      <div className="archive-workspace__content">
+        {children}
+      </div>
+      <WorkspaceFooter />
+    </main>
+  );
+}
+
 export function ArchiveProgress({ user, onLogout, isLoggingOut = false }) {
   return (
     <main className="workspace-chooser archive-session" aria-busy="true">
