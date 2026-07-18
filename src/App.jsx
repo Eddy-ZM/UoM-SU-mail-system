@@ -186,6 +186,7 @@ export function App({ currentUser }) {
   const [activeFormats, setActiveFormats] = useState(DEFAULT_ACTIVE_FORMATS);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const [archiveInitialId, setArchiveInitialId] = useState("");
   const [exportBusy, setExportBusy] = useState("");
   const [signingOut, setSigningOut] = useState(false);
   const [editorPhase, setEditorPhase] = useState(EDITOR_PHASE.CHOOSER);
@@ -255,6 +256,7 @@ export function App({ currentUser }) {
     updateOrigin.current = "new-email";
     setArchiveReceipt(null);
     setArchiveOpen(false);
+    setArchiveInitialId("");
     setExportBusy("");
     setHtml(identified.html);
     setPreviewHtml(identified.html);
@@ -269,6 +271,22 @@ export function App({ currentUser }) {
     } catch {
       // A blocked local store must not prevent creation of a fresh email.
     }
+  }, []);
+
+  const openArchiveSearch = useCallback(() => {
+    setArchiveInitialId("");
+    setArchiveOpen(true);
+  }, []);
+
+  const openArchivedReceipt = useCallback(() => {
+    if (!archiveReceipt?.archiveId) return;
+    setArchiveInitialId(archiveReceipt.archiveId);
+    setArchiveOpen(true);
+  }, [archiveReceipt]);
+
+  const closeArchive = useCallback(() => {
+    setArchiveOpen(false);
+    setArchiveInitialId("");
   }, []);
 
   useEffect(() => {
@@ -884,10 +902,16 @@ export function App({ currentUser }) {
       textarea.style.position = "fixed";
       textarea.style.opacity = "0";
       document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      textarea.remove();
-      showNotice(`HTML copied and archived as ${archived.messageNumber}`);
+      let copied = false;
+      try {
+        textarea.select();
+        copied = document.execCommand("copy");
+      } finally {
+        textarea.remove();
+      }
+      showNotice(copied
+        ? `HTML copied and archived as ${archived.messageNumber}`
+        : "Copy was blocked. Open the read-only archive copy and try again.");
     }
   };
 
@@ -923,7 +947,7 @@ export function App({ currentUser }) {
       }
       showNotice(`Outlook email copied and archived as ${archived.messageNumber}`);
     } catch {
-      showNotice("Copy was blocked. The archived email remains locked and can be viewed in the archive.");
+      showNotice("Copy was blocked. Open the read-only archive copy and try again.");
     }
   };
 
@@ -961,11 +985,11 @@ export function App({ currentUser }) {
         <WorkspaceChooser
           user={currentUser}
           onCreateEmail={startNewEmail}
-          onSearchArchive={() => setArchiveOpen(true)}
+          onSearchArchive={openArchiveSearch}
           onLogout={signOut}
           isLoggingOut={signingOut}
         />
-        <ArchivePanel open={archiveOpen} onClose={() => setArchiveOpen(false)} />
+        <ArchivePanel open={archiveOpen} onClose={closeArchive} initialArchiveId={archiveInitialId} />
         {notice && <div className="toast" role="status" aria-live="polite">{notice}</div>}
       </>
     );
@@ -982,11 +1006,12 @@ export function App({ currentUser }) {
           user={currentUser}
           receipt={archiveReceipt}
           onCreateEmail={startNewEmail}
-          onSearchArchive={() => setArchiveOpen(true)}
+          onOpenArchived={openArchivedReceipt}
+          onSearchArchive={openArchiveSearch}
           onLogout={signOut}
           isLoggingOut={signingOut}
         />
-        <ArchivePanel open={archiveOpen} onClose={() => setArchiveOpen(false)} />
+        <ArchivePanel open={archiveOpen} onClose={closeArchive} initialArchiveId={archiveInitialId} />
         {notice && <div className="toast" role="status" aria-live="polite">{notice}</div>}
       </>
     );
@@ -1011,7 +1036,7 @@ export function App({ currentUser }) {
           </button>
         </div>
         <div className="header-actions">
-          <AppButton className="secondary-on-dark" onClick={() => setArchiveOpen(true)}>Backups</AppButton>
+          <AppButton className="secondary-on-dark" onClick={openArchiveSearch}>Backups</AppButton>
           <AppButton className="secondary-on-dark" onClick={resetTemplate}>Reset</AppButton>
           <AppButton className="secondary-on-dark" onClick={copySource} disabled={Boolean(exportBusy || codeError || protectionIssues.length)}>{exportBusy === "copy_html" ? "Archiving..." : "Copy HTML"}</AppButton>
           <AppButton className="primary" onClick={copyForOutlook} disabled={Boolean(exportBusy || codeError || protectionIssues.length)}>{exportBusy === "copy_outlook" ? "Archiving..." : "Copy for Outlook"}</AppButton>
@@ -1019,7 +1044,7 @@ export function App({ currentUser }) {
         </div>
       </header>
 
-      <ArchivePanel open={archiveOpen} onClose={() => setArchiveOpen(false)} />
+      <ArchivePanel open={archiveOpen} onClose={closeArchive} initialArchiveId={archiveInitialId} />
 
       <main className="studio-workspace">
         <aside className="settings-panel" aria-label="Email settings">

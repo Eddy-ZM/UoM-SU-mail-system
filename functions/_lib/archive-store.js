@@ -7,6 +7,7 @@ import {
   sha256Hex,
   verificationCodeFromSha256,
 } from "../../shared/email-integrity.js";
+import { archiveReopenWindow } from "../../shared/archive-reopen.js";
 
 export const ARCHIVE_OWNER_EMAIL = "ziwen.mu@chemvault.science";
 export const ARCHIVE_OPERATIONS = Object.freeze(["copy_html", "copy_outlook", "download_html"]);
@@ -120,10 +121,12 @@ export async function createArchive(db, payload, verifiedUser, options = {}) {
     filename,
     submittedBy: user,
     createdAt,
+    ...archiveReopenWindow(createdAt, options.now ?? Date.now()),
   };
 }
 
-function archiveSummary(row) {
+function archiveSummary(row, now = Date.now()) {
+  const reopenWindow = archiveReopenWindow(row.first_archived_at || row.created_at, now);
   return {
     id: row.id,
     messageNumber: row.message_number,
@@ -138,10 +141,11 @@ function archiveSummary(row) {
       role: row.submitted_by_role,
     },
     createdAt: row.created_at,
+    ...reopenWindow,
   };
 }
 
-export async function listArchives(db, search = "", requestedLimit = 50) {
+export async function listArchives(db, search = "", requestedLimit = 50, options = {}) {
   if (!db?.prepare) throw new ArchiveValidationError("Archive database is unavailable.", 503);
   const query = String(search || "").trim().slice(0, 128);
   const limit = Math.min(Math.max(Number.parseInt(requestedLimit, 10) || 50, 1), 100);
@@ -149,38 +153,50 @@ export async function listArchives(db, search = "", requestedLimit = 50) {
   if (query) {
     const like = `%${query.replaceAll("%", "\\%").replaceAll("_", "\\_")}%`;
     statement = db.prepare(`
-      SELECT id, message_number, sha256, verification_code, operation, subject, filename,
-             submitted_by_user_id, submitted_by_email, submitted_by_role, created_at
-      FROM email_archives
-      WHERE message_number LIKE ? ESCAPE '\\' OR sha256 LIKE ? ESCAPE '\\' OR verification_code LIKE ? ESCAPE '\\'
-      ORDER BY created_at DESC
+      SELECT archive.id, archive.message_number, archive.sha256, archive.verification_code, archive.operation,
+             archive.subject, archive.filename, archive.submitted_by_user_id, archive.submitted_by_email,
+             archive.submitted_by_role, archive.created_at,
+             (SELECT MIN(earliest.created_at) FROM email_archives AS earliest
+              WHERE earliest.message_number = archive.message_number) AS first_archived_at
+      FROM email_archives AS archive
+      WHERE archive.message_number LIKE ? ESCAPE '\\' OR archive.sha256 LIKE ? ESCAPE '\\' OR archive.verification_code LIKE ? ESCAPE '\\'
+      ORDER BY archive.created_at DESC
       LIMIT ?
     `).bind(like, like, like, limit);
   } else {
     statement = db.prepare(`
-      SELECT id, message_number, sha256, verification_code, operation, subject, filename,
-             submitted_by_user_id, submitted_by_email, submitted_by_role, created_at
-      FROM email_archives
-      ORDER BY created_at DESC
+      SELECT archive.id, archive.message_number, archive.sha256, archive.verification_code, archive.operation,
+             archive.subject, archive.filename, archive.submitted_by_user_id, archive.submitted_by_email,
+             archive.submitted_by_role, archive.created_at,
+             (SELECT MIN(earliest.created_at) FROM email_archives AS earliest
+              WHERE earliest.message_number = archive.message_number) AS first_archived_at
+      FROM email_archives AS archive
+      ORDER BY archive.created_at DESC
       LIMIT ?
     `).bind(limit);
   }
   const result = await statement.all();
-  return (result.results || []).map(archiveSummary);
+  return (result.results || []).map((row) => archiveSummary(row, options.now ?? Date.now()));
 }
 
-export async function getArchive(db, archiveId) {
+export async function getArchive(db, archiveId, options = {}) {
   if (!db?.prepare) throw new ArchiveValidationError("Archive database is unavailable.", 503);
   const row = await db.prepare(`
-    SELECT id, message_number, sha256, verification_code, operation, subject, filename, html, document_json,
-           submitted_by_user_id, submitted_by_email, submitted_by_role, created_at
-    FROM email_archives WHERE id = ?
+    SELECT archive.id, archive.message_number, archive.sha256, archive.verification_code, archive.operation,
+           archive.subject, archive.filename, archive.html, archive.document_json,
+           archive.submitted_by_user_id, archive.submitted_by_email, archive.submitted_by_role, archive.created_at,
+           (SELECT MIN(earliest.created_at) FROM email_archives AS earliest
+            WHERE earliest.message_number = archive.message_number) AS first_archived_at
+    FROM email_archives AS archive WHERE archive.id = ?
   `).bind(archiveId).first();
   if (!row) return null;
+  const summary = archiveSummary(row, options.now ?? Date.now());
   return {
-    ...archiveSummary(row),
-    html: row.html,
-    document: JSON.parse(row.document_json),
+    ...summary,
+    ...(summary.canReopen ? {
+      html: row.html,
+      document: JSON.parse(row.document_json),
+    } : {}),
   };
 }
 

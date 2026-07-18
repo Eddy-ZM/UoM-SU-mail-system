@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { canReopenArchive } from "../shared/archive-reopen.js";
 import { loadArchive, loadArchives, removeArchive } from "./archiveClient.js";
 
 const OPERATION_LABELS = {
@@ -7,17 +8,90 @@ const OPERATION_LABELS = {
   download_html: "Download HTML",
 };
 
-export function ArchivePanel({ open, onClose }) {
+function formatDate(value) {
+  return new Date(value).toLocaleString("en-GB");
+}
+
+function legacyCopyText(value) {
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  if (!copied) throw new Error("The browser blocked clipboard access.");
+}
+
+async function copyHtmlSource(html) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(html);
+    return;
+  }
+  legacyCopyText(html);
+}
+
+async function copyHtmlForOutlook(html) {
+  const parsed = new DOMParser().parseFromString(html, "text/html");
+  const bodyHtml = parsed.body.innerHTML;
+  const plainText = parsed.body.innerText.replace(/\n{3,}/g, "\n\n").trim();
+
+  if (window.ClipboardItem && navigator.clipboard?.write) {
+    await navigator.clipboard.write([
+      new window.ClipboardItem({
+        "text/html": new Blob([bodyHtml], { type: "text/html" }),
+        "text/plain": new Blob([plainText], { type: "text/plain" }),
+      }),
+    ]);
+    return;
+  }
+
+  const holder = document.createElement("div");
+  holder.innerHTML = bodyHtml;
+  holder.style.position = "fixed";
+  holder.style.left = "-9999px";
+  document.body.appendChild(holder);
+  try {
+    const range = document.createRange();
+    range.selectNodeContents(holder);
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+    const copied = document.execCommand("copy");
+    selection.removeAllRanges();
+    if (!copied) throw new Error("The browser blocked clipboard access.");
+  } finally {
+    holder.remove();
+  }
+}
+
+function downloadArchivedHtml(archive) {
+  const blob = new Blob([archive.html], { type: "text/html;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = archive.filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+export function ArchivePanel({ open, onClose, initialArchiveId = "" }) {
   const [query, setQuery] = useState("");
   const [records, setRecords] = useState([]);
   const [canDelete, setCanDelete] = useState(false);
   const [selected, setSelected] = useState(null);
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
+  const [actionMessage, setActionMessage] = useState("");
+  const [now, setNow] = useState(() => Date.now());
 
   const refresh = useCallback(async (search = "") => {
     setStatus("loading");
     setError("");
+    setActionMessage("");
     try {
       const payload = await loadArchives(search);
       setRecords(Array.isArray(payload.archives) ? payload.archives : []);
@@ -29,28 +103,58 @@ export function ArchivePanel({ open, onClose }) {
     }
   }, []);
 
-  useEffect(() => {
-    if (open) void refresh("");
-  }, [open, refresh]);
-
-  if (!open) return null;
-
-  const viewRecord = async (record) => {
+  const viewRecord = useCallback(async (record) => {
     setStatus("loading-detail");
     setError("");
+    setActionMessage("");
     try {
-      setSelected(await loadArchive(record.id));
+      const archive = await loadArchive(record.id);
+      if (!canReopenArchive(archive) || typeof archive.html !== "string") {
+        throw new Error("The 24-hour read-only reopening window has expired.");
+      }
+      setSelected(archive);
       setStatus("ready");
     } catch (caught) {
+      setSelected(null);
       setError(caught instanceof Error ? caught.message : "The archived email could not be loaded.");
       setStatus("error");
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
+      setSelected(null);
+      setActionMessage("");
+      return undefined;
+    }
+
+    let cancelled = false;
+    setNow(Date.now());
+    void (async () => {
+      await refresh("");
+      if (!cancelled && initialArchiveId) await viewRecord({ id: initialArchiveId });
+    })();
+    const timer = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [initialArchiveId, open, refresh, viewRecord]);
+
+  useEffect(() => {
+    if (selected && !canReopenArchive(selected, now)) {
+      setSelected(null);
+      setError("The 24-hour read-only reopening window has expired.");
+    }
+  }, [now, selected]);
+
+  if (!open) return null;
 
   const deleteRecord = async (record) => {
     if (!canDelete || !window.confirm(`Permanently delete archive ${record.messageNumber}? This cannot be undone.`)) return;
     setStatus("deleting");
     setError("");
+    setActionMessage("");
     try {
       await removeArchive(record.id);
       if (selected?.id === record.id) setSelected(null);
@@ -58,6 +162,22 @@ export function ArchivePanel({ open, onClose }) {
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "The archived email could not be deleted.");
       setStatus("error");
+    }
+  };
+
+  const runReadOnlyAction = async (action, successMessage) => {
+    if (!selected || !canReopenArchive(selected)) {
+      setSelected(null);
+      setError("The 24-hour read-only reopening window has expired.");
+      return;
+    }
+    setActionMessage("");
+    setError("");
+    try {
+      await action();
+      setActionMessage(successMessage);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "The browser blocked this operation. Please try again.");
     }
   };
 
@@ -72,7 +192,9 @@ export function ArchivePanel({ open, onClose }) {
           <button type="button" onClick={onClose} aria-label="Close email backups">Close</button>
         </header>
 
-        <form className="archive-search" onSubmit={(event) => { event.preventDefault(); void refresh(query); }}>
+        <p className="archive-policy">Archived emails remain immutable. Their read-only preview and export tools are available to authorised team members for 24 hours from the first archive time.</p>
+
+        <form className="archive-search" onSubmit={(event) => { event.preventDefault(); setSelected(null); void refresh(query); }}>
           <label htmlFor="archive-search">Search by message number, verification code or SHA-256</label>
           <div>
             <input id="archive-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="CHEM-SR-A1B2C3D4 or hash" />
@@ -81,41 +203,64 @@ export function ArchivePanel({ open, onClose }) {
         </form>
 
         {error && <div className="archive-error" role="alert">{error}</div>}
+        {actionMessage && <div className="archive-success" role="status">{actionMessage}</div>}
         {status === "loading" && <p className="archive-empty">Loading immutable backups...</p>}
         {status !== "loading" && records.length === 0 && <p className="archive-empty">No matching archived emails.</p>}
         <div className="archive-records">
-          {records.map((record) => (
-            <article className="archive-record" key={record.id}>
-              <div className="archive-record-main">
-                <strong>{record.messageNumber}</strong>
-                <span>Verification code: <code>{record.verificationCode}</code></span>
-                <code>{record.sha256}</code>
-                <span>{OPERATION_LABELS[record.operation] || record.operation} &middot; {new Date(record.createdAt).toLocaleString("en-GB")}</span>
-                <span>{record.submittedBy.email} &middot; {record.submittedBy.role}</span>
-              </div>
-              <div className="archive-record-actions">
-                <button type="button" onClick={() => void viewRecord(record)}>View</button>
-                {canDelete && <button className="archive-delete" type="button" onClick={() => void deleteRecord(record)}>Delete</button>}
-              </div>
-            </article>
-          ))}
+          {records.map((record) => {
+            const reopenAvailable = canReopenArchive(record, now);
+            return (
+              <article className="archive-record" key={record.id}>
+                <div className="archive-record-main">
+                  <strong>{record.messageNumber}</strong>
+                  <span>Verification code: <code>{record.verificationCode}</code></span>
+                  <code>{record.sha256}</code>
+                  <span>{OPERATION_LABELS[record.operation] || record.operation} &middot; {formatDate(record.createdAt)}</span>
+                  <span>{record.submittedBy.email} &middot; {record.submittedBy.role}</span>
+                  <span className={reopenAvailable ? "archive-window archive-window--open" : "archive-window"}>
+                    {reopenAvailable ? `Read-only access until ${formatDate(record.reopenExpiresAt)}` : "Read-only access expired"}
+                  </span>
+                </div>
+                <div className="archive-record-actions">
+                  <button
+                    type="button"
+                    onClick={() => void viewRecord(record)}
+                    disabled={!reopenAvailable || status === "loading-detail"}
+                    title={reopenAvailable ? "Open the immutable read-only copy" : "The 24-hour reopening window has expired"}
+                  >
+                    {reopenAvailable ? "Open" : "Expired"}
+                  </button>
+                  {canDelete && <button className="archive-delete" type="button" onClick={() => void deleteRecord(record)}>Delete</button>}
+                </div>
+              </article>
+            );
+          })}
         </div>
 
         {selected && (
           <section className="archive-detail" aria-label={`Archived email ${selected.messageNumber}`}>
             <div className="archive-detail-heading">
               <div><strong>{selected.subject}</strong><span>{selected.filename}</span></div>
-              <button type="button" onClick={() => setSelected(null)}>Hide details</button>
+              <button type="button" onClick={() => setSelected(null)}>Hide preview</button>
             </div>
+            <div className="archive-detail-actions" aria-label="Read-only archived email actions">
+              <button type="button" onClick={() => void runReadOnlyAction(() => copyHtmlForOutlook(selected.html), "Outlook email copied from the immutable backup.")}>Copy for Outlook</button>
+              <button type="button" onClick={() => void runReadOnlyAction(() => copyHtmlSource(selected.html), "HTML copied from the immutable backup.")}>Copy HTML</button>
+              <button type="button" onClick={() => void runReadOnlyAction(() => downloadArchivedHtml(selected), "HTML downloaded from the immutable backup.")}>Download HTML</button>
+            </div>
+            <p className="archive-readonly-notice">Read-only access expires {formatDate(selected.reopenExpiresAt)}. Copying or downloading does not create or modify an archive record.</p>
             <dl>
               <div><dt>Message number</dt><dd>{selected.messageNumber}</dd></div>
               <div><dt>SHA-256</dt><dd><code>{selected.sha256}</code></dd></div>
               <div><dt>Verification code</dt><dd><code>{selected.verificationCode}</code></dd></div>
               <div><dt>Submitted by</dt><dd>{selected.submittedBy.email} ({selected.submittedBy.id})</dd></div>
-              <div><dt>Created</dt><dd>{new Date(selected.createdAt).toLocaleString("en-GB")}</dd></div>
+              <div><dt>First archived</dt><dd>{formatDate(selected.firstArchivedAt)}</dd></div>
             </dl>
-            <label htmlFor="archived-html">Read-only archived HTML</label>
-            <textarea id="archived-html" value={selected.html} readOnly rows="12" />
+            <iframe className="archive-preview" title={`Read-only preview of ${selected.messageNumber}`} srcDoc={selected.html} sandbox="" />
+            <details className="archive-source">
+              <summary>View read-only HTML source</summary>
+              <textarea aria-label="Read-only archived HTML" value={selected.html} readOnly rows="12" />
+            </details>
           </section>
         )}
       </section>

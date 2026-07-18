@@ -122,6 +122,7 @@ export function ArchivedSession({
   user,
   receipt,
   onCreateEmail,
+  onOpenArchived,
   onSearchArchive,
   onLogout,
   isLoggingOut = false,
@@ -132,14 +133,15 @@ export function ArchivedSession({
       <section className="archive-session__content" aria-labelledby="archive-session-title">
         <p className="archive-session__eyebrow">Immutable backup created</p>
         <h1 id="archive-session-title">Email archived. Editor closed.</h1>
-        <p>This email is now a read-only audit record and cannot be reopened for editing.</p>
+        <p>This email cannot be edited again. Authorised team members can reopen its read-only copy and repeat copy or download operations for 24 hours from its first archive time.</p>
         <dl className="archive-session__receipt">
           <div><dt>Message number</dt><dd><code>{receipt.messageNumber}</code></dd></div>
           <div><dt>Verification code</dt><dd><code>{receipt.verificationCode}</code></dd></div>
           <div><dt>Archived</dt><dd>{new Date(receipt.createdAt).toLocaleString("en-GB")}</dd></div>
         </dl>
         <div className="archive-session__actions">
-          <button className="archive-session__primary" type="button" onClick={onCreateEmail}>Create another email</button>
+          <button className="archive-session__primary" type="button" onClick={onOpenArchived}>Open read-only copy</button>
+          <button type="button" onClick={onCreateEmail}>Create another email</button>
           <button type="button" onClick={onSearchArchive}>Search the archive</button>
         </div>
       </section>
