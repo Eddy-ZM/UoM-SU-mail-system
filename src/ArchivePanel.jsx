@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { canReopenArchive } from "../shared/archive-reopen.js";
+import { downloadFilenameForMessageNumber } from "../shared/email-integrity.js";
 import { loadArchive, loadArchives, removeArchive } from "./archiveClient.js";
 
 const OPERATION_LABELS = {
@@ -71,7 +72,7 @@ function downloadArchivedHtml(archive) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = archive.filename;
+  link.download = downloadFilenameForMessageNumber(archive.messageNumber);
   document.body.appendChild(link);
   link.click();
   link.remove();

@@ -5,6 +5,7 @@ import {
   SHA256_PLACEHOLDER,
   VERIFICATION_CODE_PLACEHOLDER,
   canonicalizeEmailHtml,
+  downloadFilenameForMessageNumber,
   ensureMessageNumber,
   extractEmbeddedSha256,
   extractIntegrityMetadata,
@@ -27,6 +28,11 @@ test("message numbers use four secure random bytes as eight uppercase hexadecima
   const result = ensureMessageNumber(source, { forceNew: true, randomSource });
   assert.equal(result.messageNumber, "CHEM-SR-000FA0FF");
   assert.equal(extractMessageNumber(result.html), "CHEM-SR-000FA0FF");
+});
+
+test("download filenames are derived only from the protected message number", () => {
+  assert.equal(downloadFilenameForMessageNumber("chem-sr-a1b2c3d4"), "UoM-CHEM-SR-A1B2C3D4.html");
+  assert.throws(() => downloadFilenameForMessageNumber("custom-name"), /message number is invalid/);
 });
 
 test("a saved draft with the all-zero placeholder receives a new random message number", () => {

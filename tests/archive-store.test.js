@@ -42,6 +42,7 @@ test("the server recomputes SHA-256 and records verified submitter identity", as
   assert.equal(archive.sha256, prepared.sha256);
   assert.equal(archive.verificationCode, prepared.verificationCode);
   assert.equal(archive.messageNumber, "CHEM-SR-89ABCDEF");
+  assert.equal(archive.filename, "UoM-CHEM-SR-89ABCDEF.html");
   assert.equal(archive.submittedBy.email, "representative@example.test");
   assert.match(db.calls[0].sql, /INSERT INTO email_archives/);
   assert.equal(db.calls[0].values[7], prepared.html);

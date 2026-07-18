@@ -38,6 +38,7 @@ import {
   canModifyDraft,
 } from "./editorSession.js";
 import {
+  downloadFilenameForMessageNumber,
   ensureMessageNumber,
   extractEmbeddedSha256,
   extractMessageNumber,
@@ -122,7 +123,7 @@ function readSavedDraft(owner) {
       return {
         html: ensureHiddenCredit(normaliseContactNames(identified.html)),
         subject: saved.subject || "Department of Chemistry Student Representatives | Student Feedback Forum",
-        filename: saved.filename || "manchester-chemistry-student-feedback-forum.html",
+        filename: downloadFilenameForMessageNumber(identified.messageNumber),
         preset: saved.preset || DEFAULT_PRESET_ID,
         draft: saved,
       };
@@ -136,15 +137,10 @@ function readSavedDraft(owner) {
   return {
     html: identified.html,
     subject: "Department of Chemistry Student Representatives | Student Feedback Forum",
-    filename: "manchester-chemistry-student-feedback-forum.html",
+    filename: downloadFilenameForMessageNumber(identified.messageNumber),
     preset: DEFAULT_PRESET_ID,
     draft: null,
   };
-}
-
-function normaliseFilename(value) {
-  const cleaned = value.trim().replace(/[<>:"/\\|?*]+/g, "-") || "manchester-chemistry-student-announcement";
-  return cleaned.toLowerCase().endsWith(".html") ? cleaned : `${cleaned}.html`;
 }
 
 function accountDisplayName(user) {
@@ -242,7 +238,7 @@ export function App({ currentUser }) {
       operation: pendingArchiveOperation,
       subject,
       messageNumber,
-      filename: normaliseFilename(filename),
+      filename,
       presetLabel: EMAIL_PRESETS.find((preset) => preset.id === activePreset)?.label || "Custom",
       moduleLabels: EMAIL_MODULES.filter((module) => modules[module.id]).map((module) => module.label),
       submittedByName: accountDisplayName(currentUser),
@@ -328,7 +324,7 @@ export function App({ currentUser }) {
       const record = saveDraft(localStorage, draftOwner, {
         html,
         subject,
-        filename: normaliseFilename(filename),
+        filename,
         preset: activePreset,
       });
       setSavedDraft(record);
@@ -384,7 +380,7 @@ export function App({ currentUser }) {
     setPreviewHtml(identified.html);
     lastLayoutSafeHtmlRef.current = identified.html;
     setSubject("Department of Chemistry Student Representatives | Student Feedback Forum");
-    setFilename("manchester-chemistry-student-feedback-forum.html");
+    setFilename(downloadFilenameForMessageNumber(identified.messageNumber));
     setActivePreset(DEFAULT_PRESET_ID);
     setCodeError("");
     setLayoutWarningOpen(false);
@@ -470,7 +466,7 @@ export function App({ currentUser }) {
         const record = saveDraft(localStorage, draftOwner, {
           html,
           subject,
-          filename: normaliseFilename(filename),
+          filename,
           preset: activePreset,
         });
         setSavedDraft(record);
@@ -941,7 +937,6 @@ export function App({ currentUser }) {
     setHtml(next);
     setPreviewHtml(next);
     setSubject(preset.subject);
-    setFilename(preset.filename);
     setActivePreset(preset.id);
     setCodeError("");
     setSyncState(`${preset.label} preset applied`);
@@ -1045,7 +1040,7 @@ export function App({ currentUser }) {
     const snapshot = {
       html: cleanEmailHtml(html),
       subject,
-      filename: normaliseFilename(filename),
+      filename,
       preset: activePreset,
       modules: { ...modules },
       operation,
@@ -1187,7 +1182,7 @@ export function App({ currentUser }) {
     setPreviewHtml(identified.html);
     lastLayoutSafeHtmlRef.current = identified.html;
     setSubject("Department of Chemistry Student Representatives | Student Feedback Forum");
-    setFilename("manchester-chemistry-student-feedback-forum.html");
+    setFilename(downloadFilenameForMessageNumber(identified.messageNumber));
     setActivePreset(DEFAULT_PRESET_ID);
     setCodeError("");
     setLayoutWarningOpen(false);
@@ -1311,8 +1306,10 @@ export function App({ currentUser }) {
             id="download-name"
             className="text-field"
             value={filename}
-            onChange={(event) => setFilename(event.target.value)}
+            readOnly
+            aria-describedby="download-name-help"
           />
+          <p className="field-help" id="download-name-help">Generated automatically from the protected message number.</p>
 
           <div className="section-rule" />
 

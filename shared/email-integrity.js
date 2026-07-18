@@ -101,6 +101,12 @@ export function isValidMessageNumber(value) {
   return normalized !== MESSAGE_NUMBER_PLACEHOLDER && MESSAGE_NUMBER_RE.test(normalized);
 }
 
+export function downloadFilenameForMessageNumber(messageNumber) {
+  const normalized = String(messageNumber || "").trim().toUpperCase();
+  if (!isValidMessageNumber(normalized)) throw new Error("Email message number is invalid.");
+  return `UoM-${normalized}.html`;
+}
+
 export function extractMessageNumber(html) {
   const value = readSingleTaggedValue(html, MESSAGE_NUMBER_TAG_RE, "message number");
   if (!isValidMessageNumber(value)) throw new Error("Email message number is invalid.");

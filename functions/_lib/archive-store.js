@@ -1,5 +1,6 @@
 import {
   canonicalizeEmailHtml,
+  downloadFilenameForMessageNumber,
   extractEmbeddedSha256,
   extractMessageNumber,
   extractVerificationCode,
@@ -57,17 +58,19 @@ export async function createArchive(db, payload, verifiedUser, options = {}) {
   const html = requiredString(payload.html, "html", MAX_HTML_BYTES);
   if (new TextEncoder().encode(html).byteLength > MAX_HTML_BYTES) throw new ArchiveValidationError("Email HTML is too large.", 413);
   const subject = requiredString(payload.subject, "subject", MAX_SUBJECT_LENGTH);
-  const filename = requiredString(payload.filename, "filename", MAX_FILENAME_LENGTH);
+  requiredString(payload.filename, "filename", MAX_FILENAME_LENGTH);
   const preset = typeof payload.preset === "string" ? payload.preset.trim().slice(0, MAX_PRESET_LENGTH) : "custom";
   const modules = payload.modules && typeof payload.modules === "object" && !Array.isArray(payload.modules) ? payload.modules : {};
   const user = normalizedUser(verifiedUser);
 
   let messageNumber;
+  let filename;
   let submittedSha256;
   let submittedVerificationCode;
   let canonicalHtml;
   try {
     messageNumber = extractMessageNumber(html);
+    filename = downloadFilenameForMessageNumber(messageNumber);
     submittedSha256 = extractEmbeddedSha256(html);
     submittedVerificationCode = extractVerificationCode(html);
     canonicalHtml = canonicalizeEmailHtml(html);
