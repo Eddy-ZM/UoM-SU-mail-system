@@ -23,6 +23,7 @@ import {
 import { DEFAULT_PRESET_ID, EMAIL_PRESETS, getPresetById } from "./emailPresets.js";
 import { ArchivePanel } from "./ArchivePanel.jsx";
 import { archiveEmailExport } from "./archiveClient.js";
+import { buildArchiveConfirmationDetails } from "./archiveConfirmation.js";
 import { ArchivedSession, ArchiveProgress, ArchiveWorkspace, WorkspaceChooser } from "./WorkspaceChooser.jsx";
 import {
   EDITOR_PHASE,
@@ -31,6 +32,7 @@ import {
 } from "./editorSession.js";
 import {
   ensureMessageNumber,
+  extractMessageNumber,
   extractVerificationCode,
   markVerificationCodePending,
   prepareEmailForArchive,
@@ -191,6 +193,8 @@ export function App({ currentUser }) {
   const [signingOut, setSigningOut] = useState(false);
   const [editorPhase, setEditorPhase] = useState(EDITOR_PHASE.CHOOSER);
   const [archiveReceipt, setArchiveReceipt] = useState(null);
+  const [pendingArchiveOperation, setPendingArchiveOperation] = useState("");
+  const [archiveDetailsConfirmed, setArchiveDetailsConfirmed] = useState(false);
   const iframeRef = useRef(null);
   const savedSelectionRef = useRef(null);
   const paletteDragTypeRef = useRef(null);
@@ -201,6 +205,25 @@ export function App({ currentUser }) {
   const metadata = useMemo(() => getEmailMetadata(html), [html]);
   const modules = useMemo(() => getEmailModules(html), [html]);
   const protectionIssues = useMemo(() => getProtectedContentIssues(html), [html]);
+  const archiveConfirmationDetails = useMemo(() => {
+    if (!pendingArchiveOperation) return null;
+    let messageNumber = "";
+    try {
+      messageNumber = extractMessageNumber(html);
+    } catch {
+      // The confirmation dialog reports the missing protected identifier.
+    }
+    return buildArchiveConfirmationDetails({
+      operation: pendingArchiveOperation,
+      subject,
+      messageNumber,
+      filename: normaliseFilename(filename),
+      presetLabel: EMAIL_PRESETS.find((preset) => preset.id === activePreset)?.label || "Custom",
+      moduleLabels: EMAIL_MODULES.filter((module) => modules[module.id]).map((module) => module.label),
+      submittedByName: accountDisplayName(currentUser),
+      submittedByEmail: currentUser?.email,
+    });
+  }, [activePreset, currentUser, filename, html, modules, pendingArchiveOperation, subject]);
   const availableFontSizes = useMemo(() => {
     const selectedSize = Number(fontSize);
     return [...new Set([...FONT_SIZES, selectedSize])].filter(Number.isFinite).sort((a, b) => a - b);
@@ -382,13 +405,24 @@ export function App({ currentUser }) {
   }, [editorPhase, html]);
 
   useEffect(() => {
-    if (!codeError) return undefined;
+    if (!codeError && !pendingArchiveOperation) return undefined;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [codeError]);
+  }, [codeError, pendingArchiveOperation]);
+
+  useEffect(() => {
+    if (!pendingArchiveOperation) return undefined;
+    const cancelOnEscape = (event) => {
+      if (event.key !== "Escape") return;
+      setPendingArchiveOperation("");
+      setArchiveDetailsConfirmed(false);
+    };
+    document.addEventListener("keydown", cancelOnEscape);
+    return () => document.removeEventListener("keydown", cancelOnEscape);
+  }, [pendingArchiveOperation]);
 
   const handleFrameLoad = useCallback(() => {
     if (!canModifyDraft(editorPhase)) return;
@@ -988,6 +1022,27 @@ export function App({ currentUser }) {
     showNotice(`HTML downloaded and archived as ${archived.messageNumber}`);
   };
 
+  const requestArchiveConfirmation = (operation) => {
+    if (!exportIsAllowed()) return;
+    setArchiveDetailsConfirmed(false);
+    setPendingArchiveOperation(operation);
+  };
+
+  const cancelArchiveConfirmation = () => {
+    setPendingArchiveOperation("");
+    setArchiveDetailsConfirmed(false);
+  };
+
+  const confirmArchiveOperation = async () => {
+    if (!archiveConfirmationDetails?.ready || !archiveDetailsConfirmed) return;
+    const operation = pendingArchiveOperation;
+    setPendingArchiveOperation("");
+    setArchiveDetailsConfirmed(false);
+    if (operation === "copy_html") await copySource();
+    if (operation === "copy_outlook") await copyForOutlook();
+    if (operation === "download_html") await downloadHtml();
+  };
+
   const resetTemplate = () => {
     if (!window.confirm("Reset the email to the original Manchester Chemistry template? Your current local draft will be replaced.")) return;
     updateOrigin.current = "reset";
@@ -1063,7 +1118,7 @@ export function App({ currentUser }) {
 
   return (
     <>
-    <div className="studio-shell" inert={Boolean(codeError) ? true : undefined}>
+    <div className="studio-shell" inert={Boolean(codeError || pendingArchiveOperation) ? true : undefined}>
       <header className="studio-header">
         <div className="studio-brand">
           <div className="brand-kicker">THE UNIVERSITY OF MANCHESTER</div>
@@ -1083,9 +1138,9 @@ export function App({ currentUser }) {
         <div className="header-actions">
           <AppButton className="secondary-on-dark" onClick={openArchiveSearch}>Backups</AppButton>
           <AppButton className="secondary-on-dark" onClick={resetTemplate}>Reset</AppButton>
-          <AppButton className="secondary-on-dark" onClick={copySource} disabled={Boolean(exportBusy || codeError || protectionIssues.length)}>{exportBusy === "copy_html" ? "Archiving..." : "Copy HTML"}</AppButton>
-          <AppButton className="primary" onClick={copyForOutlook} disabled={Boolean(exportBusy || codeError || protectionIssues.length)}>{exportBusy === "copy_outlook" ? "Archiving..." : "Copy for Outlook"}</AppButton>
-          <AppButton className="primary-light" onClick={downloadHtml} disabled={Boolean(exportBusy || codeError || protectionIssues.length)}>{exportBusy === "download_html" ? "Archiving..." : "Download HTML"}</AppButton>
+          <AppButton className="secondary-on-dark" onClick={() => requestArchiveConfirmation("copy_html")} disabled={Boolean(exportBusy || codeError || protectionIssues.length)}>{exportBusy === "copy_html" ? "Archiving..." : "Copy HTML"}</AppButton>
+          <AppButton className="primary" onClick={() => requestArchiveConfirmation("copy_outlook")} disabled={Boolean(exportBusy || codeError || protectionIssues.length)}>{exportBusy === "copy_outlook" ? "Archiving..." : "Copy for Outlook"}</AppButton>
+          <AppButton className="primary-light" onClick={() => requestArchiveConfirmation("download_html")} disabled={Boolean(exportBusy || codeError || protectionIssues.length)}>{exportBusy === "download_html" ? "Archiving..." : "Download HTML"}</AppButton>
         </div>
       </header>
 
@@ -1347,6 +1402,40 @@ export function App({ currentUser }) {
 
       {notice && <div className="toast" role="status" aria-live="polite">{notice}</div>}
     </div>
+    {archiveConfirmationDetails && !codeError && (
+      <div className="archive-confirmation-overlay" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && cancelArchiveConfirmation()}>
+        <section className="archive-confirmation-dialog" role="dialog" aria-modal="true" aria-labelledby="archive-confirmation-title" aria-describedby="archive-confirmation-description">
+          <p className="archive-confirmation-kicker">FINAL REVIEW &middot; IMMUTABLE ARCHIVE</p>
+          <h2 id="archive-confirmation-title">Confirm this email before archiving</h2>
+          <p id="archive-confirmation-description" className="archive-confirmation-lead">
+            Review the information below carefully. Continuing creates an immutable audit record and closes this editable copy.
+          </p>
+          <dl className="archive-confirmation-details">
+            <div className="archive-confirmation-subject"><dt>Outlook email title</dt><dd>{archiveConfirmationDetails.subject || "Not provided"}</dd></div>
+            <div><dt>Archive operation</dt><dd>{archiveConfirmationDetails.operationLabel}</dd></div>
+            <div><dt>Message number</dt><dd><code>{archiveConfirmationDetails.messageNumber || "Unavailable"}</code></dd></div>
+            <div><dt>Download filename</dt><dd>{archiveConfirmationDetails.filename || "Not provided"}</dd></div>
+            <div><dt>Announcement type</dt><dd>{archiveConfirmationDetails.presetLabel}</dd></div>
+            <div><dt>Enabled modules</dt><dd>{archiveConfirmationDetails.moduleLabels.length > 0 ? archiveConfirmationDetails.moduleLabels.join(", ") : "No optional modules enabled"}</dd></div>
+            <div><dt>Archived by</dt><dd>{archiveConfirmationDetails.submittedByName}<small>{archiveConfirmationDetails.submittedByEmail || "Identity unavailable"}</small></dd></div>
+          </dl>
+          {archiveConfirmationDetails.issues.length > 0 && (
+            <div className="archive-confirmation-warning" role="alert">
+              <strong>Resolve before continuing</strong>
+              <ul>{archiveConfirmationDetails.issues.map((issue) => <li key={issue}>{issue}</li>)}</ul>
+            </div>
+          )}
+          <label className="archive-confirmation-check">
+            <input type="checkbox" checked={archiveDetailsConfirmed} onChange={(event) => setArchiveDetailsConfirmed(event.target.checked)} autoFocus />
+            <span>I have checked the email title and the information above, and I understand that the archive cannot be edited.</span>
+          </label>
+          <div className="archive-confirmation-actions">
+            <button type="button" onClick={cancelArchiveConfirmation}>Cancel</button>
+            <button type="button" onClick={() => void confirmArchiveOperation()} disabled={!archiveDetailsConfirmed || !archiveConfirmationDetails.ready}>Confirm and archive</button>
+          </div>
+        </section>
+      </div>
+    )}
     {codeError && (
       <div className="html-recovery-overlay" role="dialog" aria-modal="true" aria-labelledby="html-recovery-title" aria-describedby="html-recovery-description">
         <section className="html-recovery-dialog">

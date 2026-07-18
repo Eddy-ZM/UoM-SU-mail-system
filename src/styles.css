@@ -1117,6 +1117,210 @@ button {
   background: #ffeadf;
 }
 
+.archive-confirmation-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 950;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 24px;
+  background: rgba(24, 18, 27, 0.88);
+  backdrop-filter: blur(8px);
+}
+
+.archive-confirmation-dialog {
+  width: min(720px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: clamp(28px, 4vw, 44px);
+  color: #2b2530;
+  background: #ffffff;
+  border-top: 6px solid #660099;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+}
+
+.archive-confirmation-kicker {
+  margin: 0 0 10px;
+  color: #660099;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 1.6px;
+}
+
+.archive-confirmation-dialog h2 {
+  margin: 0;
+  color: #211b24;
+  font-size: clamp(28px, 5vw, 40px);
+  line-height: 1.08;
+  letter-spacing: -1px;
+}
+
+.archive-confirmation-lead {
+  margin: 16px 0 0;
+  color: #625968;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.archive-confirmation-details {
+  margin: 24px 0 0;
+  border-top: 1px solid #ded5e2;
+}
+
+.archive-confirmation-details > div {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.42fr) minmax(0, 1fr);
+  gap: 18px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e8e1eb;
+}
+
+.archive-confirmation-details dt {
+  color: #6e6473;
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.5;
+}
+
+.archive-confirmation-details dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #28212c;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.archive-confirmation-details code {
+  padding: 2px 5px;
+  color: #4f116d;
+  background: #f4edf7;
+  border-radius: 2px;
+  font: 700 11px/1.5 Consolas, "Courier New", monospace;
+}
+
+.archive-confirmation-details small {
+  display: block;
+  margin-top: 2px;
+  color: #6e6473;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.archive-confirmation-subject dd {
+  color: #211b24;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.archive-confirmation-warning {
+  margin-top: 18px;
+  padding: 14px 16px;
+  color: #682f29;
+  background: #fff1ed;
+  border-left: 5px solid #a84438;
+}
+
+.archive-confirmation-warning strong {
+  font-size: 12px;
+}
+
+.archive-confirmation-warning ul {
+  margin: 7px 0 0;
+  padding-left: 18px;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.archive-confirmation-check {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 11px;
+  align-items: start;
+  margin-top: 22px;
+  padding: 15px 16px;
+  color: #3c3341;
+  background: #f5f1f7;
+  border: 1px solid #d8cddd;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+.archive-confirmation-check input {
+  width: 17px;
+  height: 17px;
+  margin: 1px 0 0;
+  accent-color: #660099;
+}
+
+.archive-confirmation-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.archive-confirmation-actions button {
+  min-height: 46px;
+  padding: 0 20px;
+  border: 1px solid #660099;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.archive-confirmation-actions button:first-child {
+  color: #4f116d;
+  background: #ffffff;
+}
+
+.archive-confirmation-actions button:last-child {
+  color: #ffffff;
+  background: #660099;
+}
+
+.archive-confirmation-actions button:hover:not(:disabled) {
+  background: #52007b;
+  color: #ffffff;
+}
+
+.archive-confirmation-actions button:disabled {
+  color: #8b838e;
+  background: #e7e2e9;
+  border-color: #d6ced9;
+  cursor: not-allowed;
+}
+
+@media (max-width: 620px) {
+  .archive-confirmation-overlay {
+    align-items: start;
+    padding: 12px;
+  }
+
+  .archive-confirmation-dialog {
+    max-height: calc(100vh - 24px);
+    padding: 24px 20px;
+  }
+
+  .archive-confirmation-details > div {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+
+  .archive-confirmation-actions {
+    flex-direction: column-reverse;
+  }
+
+  .archive-confirmation-actions button {
+    width: 100%;
+  }
+}
+
 .html-recovery-overlay {
   position: fixed;
   inset: 0;
