@@ -18,6 +18,7 @@ export function getUserSystemOrigin(env = {}) {
 export function isPublicRequestPath(pathname) {
   if (pathname === "/agreement/privacy-notice" || pathname === "/agreement/privacy-notice/") return true;
   if (pathname === "/verify" || pathname === "/verify/" || pathname === "/api/verification") return true;
+  if (pathname === "/api/access/logout") return true;
   if (pathname.startsWith("/assets/")) return true;
   return pathname === "/favicon.ico" || pathname === "/robots.txt" || pathname === "/site.webmanifest";
 }
@@ -214,6 +215,8 @@ function normalizedUser(user) {
   return {
     id: user.id,
     email: user.email,
+    name: typeof user.name === "string" && user.name.trim() ? user.name.trim() : null,
+    avatarUrl: typeof user.avatarUrl === "string" && user.avatarUrl.trim() ? user.avatarUrl.trim() : null,
     systemRole: typeof user.systemRole === "string" ? user.systemRole : "user",
   };
 }

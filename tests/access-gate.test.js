@@ -22,6 +22,7 @@ test("privacy notice and compiled assets stay public while editor entries stay p
   assert.equal(isPublicRequestPath("/assets/index-a1b2.js"), true);
   assert.equal(isPublicRequestPath("/verify/"), true);
   assert.equal(isPublicRequestPath("/api/verification"), true);
+  assert.equal(isPublicRequestPath("/api/access/logout"), true);
   assert.equal(isPublicRequestPath("/api/verification/private"), false);
   assert.equal(isPublicRequestPath("/agreement/privacy-notice-hidden"), false);
   assert.equal(isPublicRequestPath("/"), false);
@@ -36,7 +37,7 @@ test("handoff verification sends audience and permission and trusts only access.
     capturedOptions = options;
     return Response.json({
       access: { allowed: true, reason: "explicit_permission" },
-      user: { id: "user-1", email: "rep@example.test", permissions: [] },
+      user: { id: "user-1", email: "rep@example.test", name: "Student Rep", avatarUrl: "https://example.test/avatar.png", permissions: [] },
       handoff: { audience: HANDOFF_AUDIENCE, expiresAt: Math.floor(Date.now() / 1000) + 600 },
     });
   });
@@ -47,6 +48,13 @@ test("handoff verification sends audience and permission and trusts only access.
   assert.equal(capturedUrl.searchParams.get("permission"), REQUIRED_PERMISSION);
   assert.equal(capturedOptions.headers.get("authorization"), `Bearer ${token}`);
   assert.equal(capturedOptions.headers.has("cookie"), false);
+  assert.deepEqual(decision.user, {
+    id: "user-1",
+    email: "rep@example.test",
+    name: "Student Rep",
+    avatarUrl: "https://example.test/avatar.png",
+    systemRole: "user",
+  });
 });
 
 test("handoff permissions fail closed even when the user payload lists a matching permission", async () => {

@@ -130,6 +130,30 @@ function normaliseFilename(value) {
   return cleaned.toLowerCase().endsWith(".html") ? cleaned : `${cleaned}.html`;
 }
 
+function accountDisplayName(user) {
+  if (typeof user?.name === "string" && user.name.trim()) return user.name.trim();
+  const localPart = String(user?.email || "Student Representative").split("@")[0];
+  return localPart
+    .replace(/\d+/g, "")
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(" ") || "Student Representative";
+}
+
+function accountInitials(name) {
+  const parts = name.split(/\s+/).filter(Boolean);
+  return (parts.length > 1 ? `${parts[0][0]}${parts.at(-1)[0]}` : parts[0]?.slice(0, 2) || "SR").toUpperCase();
+}
+
+function accountRoleLabel(role) {
+  return String(role || "user")
+    .split("_")
+    .filter(Boolean)
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(" ");
+}
+
 function AppButton({ className = "", children, ...props }) {
   return (
     <button className={`app-button ${className}`.trim()} type="button" {...props}>
@@ -138,7 +162,7 @@ function AppButton({ className = "", children, ...props }) {
   );
 }
 
-export function App() {
+export function App({ currentUser }) {
   const initialDraft = useMemo(readSavedDraft, []);
   const [html, setHtml] = useState(initialDraft.html);
   const [previewHtml, setPreviewHtml] = useState(initialDraft.html);
@@ -158,6 +182,7 @@ export function App() {
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [exportBusy, setExportBusy] = useState("");
+  const [signingOut, setSigningOut] = useState(false);
   const iframeRef = useRef(null);
   const savedSelectionRef = useRef(null);
   const paletteDragTypeRef = useRef(null);
@@ -193,6 +218,28 @@ export function App() {
     const timer = window.setInterval(() => setCurrentTime(new Date()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  const signOut = useCallback(async () => {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      const response = await fetch("/api/access/logout", {
+        method: "POST",
+        credentials: "same-origin",
+        cache: "no-store",
+        headers: { accept: "application/json" },
+      });
+      const payload = await response.json();
+      const logoutUrl = new URL(payload.logoutUrl);
+      if (!response.ok || payload.ok !== true || logoutUrl.protocol !== "https:" || logoutUrl.hostname !== "user.chemvault.science") {
+        throw new Error("The secure sign-out response was invalid.");
+      }
+      window.location.assign(logoutUrl.toString());
+    } catch {
+      setSigningOut(false);
+      showNotice("Sign out could not be completed. Please try again.");
+    }
+  }, [showNotice, signingOut]);
 
   useEffect(() => {
     let cancelled = false;
@@ -867,9 +914,16 @@ export function App() {
           <div className="brand-kicker">THE UNIVERSITY OF MANCHESTER</div>
           <div className="brand-title">Chemistry Representative Mail Studio</div>
         </div>
-        <div className="header-status" aria-live="polite">
-          <span className="status-dot" aria-hidden="true" />
-          {saveState}
+        <div className="header-account" aria-label="Signed-in ChemVault user">
+          <span className="account-avatar" aria-hidden="true">{accountInitials(accountDisplayName(currentUser))}</span>
+          <span className="account-copy">
+            <strong>{accountDisplayName(currentUser)}</strong>
+            <span>{currentUser?.email || "Authenticated user"}</span>
+            <small><span className="status-dot" aria-hidden="true" />{accountRoleLabel(currentUser?.systemRole)} · {saveState}</small>
+          </span>
+          <button className="account-sign-out" type="button" onClick={signOut} disabled={signingOut}>
+            {signingOut ? "Signing out…" : "Sign out"}
+          </button>
         </div>
         <div className="header-actions">
           <AppButton className="secondary-on-dark" onClick={() => setArchiveOpen(true)}>Backups</AppButton>

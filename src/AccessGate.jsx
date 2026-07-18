@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-const INITIAL_STATE = { status: "checking", loginUrl: null };
+const INITIAL_STATE = { status: "checking", loginUrl: null, user: null };
 const BACKGROUND_RECHECK_MS = 60_000;
 
 export function AccessGate({ children }) {
@@ -16,25 +16,25 @@ export function AccessGate({ children }) {
       });
       const payload = await response.json();
 
-      if (response.ok && payload.allowed === true) {
-        setAccess({ status: "allowed", loginUrl: null });
+      if (response.ok && payload.allowed === true && payload.user) {
+        setAccess({ status: "allowed", loginUrl: null, user: payload.user });
         return;
       }
 
       if (response.status === 401 && typeof payload.loginUrl === "string") {
-        setAccess({ status: "redirecting", loginUrl: payload.loginUrl });
+        setAccess({ status: "redirecting", loginUrl: payload.loginUrl, user: null });
         window.location.replace(payload.loginUrl);
         return;
       }
 
       if (response.status === 403) {
-        setAccess({ status: "forbidden", loginUrl: null });
+        setAccess({ status: "forbidden", loginUrl: null, user: null });
         return;
       }
 
-      setAccess({ status: "unavailable", loginUrl: null });
+      setAccess({ status: "unavailable", loginUrl: null, user: null });
     } catch {
-      setAccess({ status: "unavailable", loginUrl: null });
+      setAccess({ status: "unavailable", loginUrl: null, user: null });
     }
   }, []);
 
@@ -53,7 +53,9 @@ export function AccessGate({ children }) {
     };
   }, [verifyAccess]);
 
-  if (access.status === "allowed") return children;
+  if (access.status === "allowed") {
+    return typeof children === "function" ? children(access.user) : children;
+  }
 
   const isBusy = access.status === "checking" || access.status === "redirecting";
   const title = isBusy

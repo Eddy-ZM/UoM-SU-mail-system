@@ -12,6 +12,10 @@ const isVerificationPage = path === "/verify";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    {isPrivacyNotice ? <PrivacyNotice /> : isVerificationPage ? <VerifyMessage /> : <AccessGate><App /></AccessGate>}
+    {isPrivacyNotice
+      ? <PrivacyNotice />
+      : isVerificationPage
+        ? <VerifyMessage />
+        : <AccessGate>{(currentUser) => <App currentUser={currentUser} />}</AccessGate>}
   </React.StrictMode>,
 );

@@ -147,7 +147,7 @@ button {
   top: 0;
   z-index: 20;
   display: grid;
-  grid-template-columns: minmax(190px, 1fr) auto auto;
+  grid-template-columns: minmax(260px, 1fr) minmax(300px, auto) auto;
   align-items: center;
   gap: 24px;
   min-height: 78px;
@@ -175,21 +175,98 @@ button {
   letter-spacing: -0.6px;
 }
 
-.header-status {
+.header-account {
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: #d9d2dd;
+  gap: 10px;
+  min-width: 0;
+  padding: 7px 9px;
+  background: #211b24;
+  border: 1px solid #4c414f;
+  border-radius: 5px;
+}
+
+.account-avatar {
+  display: grid;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  color: #2b2530;
+  background: #ffcc33;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.4px;
+}
+
+.account-copy {
+  display: grid;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.account-copy strong,
+.account-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-copy strong {
+  color: #ffffff;
   font-size: 12px;
+}
+
+.account-copy > span {
+  max-width: 220px;
+  margin-top: 2px;
+  color: #d9d2dd;
+  font-size: 10px;
+  font-weight: 560;
+}
+
+.account-copy small {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+  color: #aaa0ae;
+  font-size: 9px;
+  font-weight: 650;
   white-space: nowrap;
 }
 
 .status-dot {
-  width: 8px;
-  height: 8px;
+  display: inline-block;
+  width: 6px;
+  height: 6px;
   background: #79d6a6;
   border-radius: 50%;
-  box-shadow: 0 0 0 4px rgba(121, 214, 166, 0.12);
+  box-shadow: 0 0 0 3px rgba(121, 214, 166, 0.1);
+}
+
+.account-sign-out {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 0 10px;
+  color: #f5edf7;
+  background: transparent;
+  border: 1px solid #6a5d6e;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.account-sign-out:hover {
+  color: #2b2530;
+  background: #ffcc33;
+  border-color: #ffcc33;
+}
+
+.account-sign-out:disabled {
+  cursor: wait;
+  opacity: 0.6;
 }
 
 .header-actions {
@@ -220,6 +297,7 @@ button {
 }
 
 .app-button:focus-visible,
+.account-sign-out:focus-visible,
 .preset-button:focus-visible,
 .component-add-button:focus-visible,
 .component-row-actions button:focus-visible,
@@ -1360,8 +1438,8 @@ button {
     grid-template-columns: 1fr auto;
   }
 
-  .header-status {
-    display: none;
+  .header-actions {
+    grid-column: 1 / -1;
   }
 
   .studio-workspace {
@@ -1402,6 +1480,18 @@ button {
     grid-template-columns: 1fr;
     gap: 12px;
     padding: 16px;
+  }
+
+  .header-account {
+    width: 100%;
+  }
+
+  .account-copy {
+    flex: 1;
+  }
+
+  .account-copy > span {
+    max-width: none;
   }
 
   .header-actions {
