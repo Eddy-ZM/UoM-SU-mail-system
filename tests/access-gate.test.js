@@ -16,7 +16,9 @@ const token = "header.payload.signature-value";
 const editorRequest = (path = "/", headers = {}) =>
   new Request(`https://mailsys.uomsu.chemvault.science${path}`, { headers });
 
-test("privacy notice and compiled assets stay public while editor entries stay protected", () => {
+test("certificate challenges, privacy notice and compiled assets stay public while editor entries stay protected", () => {
+  assert.equal(isPublicRequestPath("/.well-known/acme-challenge/certificate-token"), true);
+  assert.equal(isPublicRequestPath("/.well-known/cf-custom-hostname-challenge/domain-token"), true);
   assert.equal(isPublicRequestPath("/agreement/privacy-notice/"), true);
   assert.equal(isPublicRequestPath("/agreement/privacy-notice"), true);
   assert.equal(isPublicRequestPath("/assets/index-a1b2.js"), true);
@@ -24,6 +26,7 @@ test("privacy notice and compiled assets stay public while editor entries stay p
   assert.equal(isPublicRequestPath("/api/verification"), true);
   assert.equal(isPublicRequestPath("/api/access/logout"), true);
   assert.equal(isPublicRequestPath("/api/verification/private"), false);
+  assert.equal(isPublicRequestPath("/.well-known-hidden/acme-challenge/token"), false);
   assert.equal(isPublicRequestPath("/agreement/privacy-notice-hidden"), false);
   assert.equal(isPublicRequestPath("/"), false);
   assert.equal(isPublicRequestPath("/index.html"), false);

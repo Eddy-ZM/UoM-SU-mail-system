@@ -16,6 +16,7 @@ export function getUserSystemOrigin(env = {}) {
 }
 
 export function isPublicRequestPath(pathname) {
+  if (pathname.startsWith("/.well-known/")) return true;
   if (pathname === "/agreement/privacy-notice" || pathname === "/agreement/privacy-notice/") return true;
   if (pathname === "/verify" || pathname === "/verify/" || pathname === "/api/verification") return true;
   if (pathname === "/api/access/logout") return true;

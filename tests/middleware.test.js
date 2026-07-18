@@ -25,6 +25,22 @@ test("public privacy notice bypasses authentication middleware", async () => {
   assert.equal(await response.text(), "privacy");
 });
 
+test("certificate validation challenges bypass authentication middleware", async () => {
+  globalThis.fetch = async () => { throw new Error("certificate challenges must not call User System"); };
+  let nextCalls = 0;
+  const response = await onRequest({
+    request: new Request("http://mailsys.uomsu.chemvault.science/.well-known/acme-challenge/certificate-token"),
+    env: {},
+    next: async () => {
+      nextCalls += 1;
+      return new Response("certificate-token");
+    },
+  });
+
+  assert.equal(nextCalls, 1);
+  assert.equal(await response.text(), "certificate-token");
+});
+
 test("public verification page and API bypass the editor authentication redirect", async () => {
   for (const path of ["/verify/", "/api/verification"]) {
     let nextCalls = 0;
