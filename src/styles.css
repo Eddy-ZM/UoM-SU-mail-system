@@ -1393,6 +1393,16 @@ button {
   font-size: 13px;
 }
 
+.archive-record-main .archive-record-title {
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+.archive-record-main .archive-record-number code {
+  color: inherit;
+  font-weight: 750;
+}
+
 .archive-record-main code,
 .archive-detail code {
   overflow-wrap: anywhere;

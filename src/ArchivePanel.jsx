@@ -208,9 +208,9 @@ export function ArchivePanel({
         <p className="archive-policy">Archived emails remain immutable. Their read-only preview and export tools are available to authorised team members for 24 hours from the first archive time.</p>
 
         <form className="archive-search" onSubmit={(event) => { event.preventDefault(); setSelected(null); void refresh(query); }}>
-          <label htmlFor="archive-search">Search by message number, verification code or SHA-256</label>
+          <label htmlFor="archive-search">Search by email subject, message number, verification code or SHA-256</label>
           <div>
-            <input id="archive-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="CHEM-SR-A1B2C3D4 or hash" />
+            <input id="archive-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Email subject, CHEM-SR-A1B2C3D4 or hash" />
             <button type="submit">Search</button>
           </div>
         </form>
@@ -225,7 +225,8 @@ export function ArchivePanel({
             return (
               <article className="archive-record" key={record.id}>
                 <div className="archive-record-main">
-                  <strong>{record.messageNumber}</strong>
+                  <strong className="archive-record-title">{record.subject?.trim() || "Untitled email"}</strong>
+                  <span className="archive-record-number">Message No.: <code>{record.messageNumber}</code></span>
                   <span>Verification code: <code>{record.verificationCode}</code></span>
                   <code>{record.sha256}</code>
                   <span>{OPERATION_LABELS[record.operation] || record.operation} &middot; {formatDate(record.createdAt)}</span>

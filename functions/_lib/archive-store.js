@@ -159,10 +159,13 @@ export async function listArchives(db, search = "", requestedLimit = 50, options
              (SELECT MIN(earliest.created_at) FROM email_archives AS earliest
               WHERE earliest.message_number = archive.message_number) AS first_archived_at
       FROM email_archives AS archive
-      WHERE archive.message_number LIKE ? ESCAPE '\\' OR archive.sha256 LIKE ? ESCAPE '\\' OR archive.verification_code LIKE ? ESCAPE '\\'
+      WHERE archive.subject LIKE ? ESCAPE '\\' COLLATE NOCASE
+         OR archive.message_number LIKE ? ESCAPE '\\'
+         OR archive.sha256 LIKE ? ESCAPE '\\'
+         OR archive.verification_code LIKE ? ESCAPE '\\'
       ORDER BY archive.created_at DESC
       LIMIT ?
-    `).bind(like, like, like, limit);
+    `).bind(like, like, like, like, limit);
   } else {
     statement = db.prepare(`
       SELECT archive.id, archive.message_number, archive.sha256, archive.verification_code, archive.operation,

@@ -233,7 +233,7 @@ export function PrivacyNotice() {
               purpose. We may share:
             </p>
             <p>
-              Authorised Mail System users may search archive metadata by message number or SHA-256 and inspect a
+              Authorised Mail System users may search archive metadata by email subject, message number, verification code or SHA-256 and inspect a
               read-only backup where this is necessary for authenticity verification, accountability or investigation.
               The Service provides no archive-editing interface. Only the account
               <strong> ziwen.mu@chemvault.science</strong> is permitted by the server to delete an archive record; other

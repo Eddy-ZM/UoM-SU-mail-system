@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createArchive, deleteArchive, verifyArchivedMessage } from "../functions/_lib/archive-store.js";
+import { createArchive, deleteArchive, listArchives, verifyArchivedMessage } from "../functions/_lib/archive-store.js";
 import { VERIFICATION_CODE_PLACEHOLDER, prepareEmailForArchive } from "../shared/email-integrity.js";
 
 const sourceEmail = `<!doctype html><html><body><span data-message-number="true">CHEM-SR-89ABCDEF</span><p>Archive me</p><span data-verification-code="true">${VERIFICATION_CODE_PLACEHOLDER}</span></body></html>`;
@@ -59,6 +59,43 @@ test("a forged embedded hash is rejected before any database write", async () =>
     operation: "download_html",
   }, { id: "u1", email: "rep@example.test", systemRole: "user" }), /does not match/);
   assert.equal(db.calls.length, 0);
+});
+
+test("archive search includes the email subject and returns it in the summary", async () => {
+  const calls = [];
+  const db = {
+    prepare(sql) {
+      const call = { sql, values: [] };
+      calls.push(call);
+      return {
+        bind(...values) { call.values = values; return this; },
+        async all() {
+          return {
+            results: [{
+              id: "archive-123",
+              message_number: "CHEM-SR-89ABCDEF",
+              sha256: "A".repeat(64),
+              verification_code: "1234-ABCD-5678-EF90",
+              operation: "copy_html",
+              subject: "Chemistry student questionnaire",
+              filename: "questionnaire.html",
+              submitted_by_user_id: "user-123",
+              submitted_by_email: "representative@example.test",
+              submitted_by_role: "user",
+              created_at: "2026-07-18T12:00:00.000Z",
+              first_archived_at: "2026-07-18T12:00:00.000Z",
+            }],
+          };
+        },
+      };
+    },
+  };
+
+  const archives = await listArchives(db, "questionnaire", 25, { now: Date.parse("2026-07-18T13:00:00.000Z") });
+
+  assert.match(calls[0].sql, /archive\.subject LIKE \?/);
+  assert.deepEqual(calls[0].values, ["%questionnaire%", "%questionnaire%", "%questionnaire%", "%questionnaire%", 25]);
+  assert.equal(archives[0].subject, "Chemistry student questionnaire");
 });
 
 test("public verification returns the same generic invalid result for wrong or malformed values", async () => {
