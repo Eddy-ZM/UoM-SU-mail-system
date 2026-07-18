@@ -2,6 +2,8 @@
 
 A browser-based visual and HTML editor for English announcements from the Department of Chemistry Student Representatives at The University of Manchester.
 
+The editor is protected by ChemVault User System. A signed-in account must have the `service:uom-su-mail-system:access` permission before any editor entry page is served. Authentication and permission checks run in Cloudflare Pages Functions and fail closed if User System is unavailable. User System handoff works on both the Pages hostname and the production custom domain; its short-lived token is kept only in a host-only, HttpOnly cookie and is reverified for current permission on every editor request. The public Privacy Notice remains available without signing in so students can review it before submitting a form.
+
 The published site also contains the formal Privacy Notice used by the Mail System and by Team-managed Microsoft 365 Forms, surveys, questionnaires and feedback channels:
 
 - `/agreement/privacy-notice/`
@@ -52,3 +54,5 @@ npm run build
 ## Cloudflare Pages
 
 Production builds use `npm run build` and publish the `dist` directory. The Cloudflare Pages project is connected to the repository's `main` branch so each push triggers a new production build.
+
+Set `USER_AUTH_ORIGIN` in Cloudflare Pages when the User System origin differs from `https://user.chemvault.science`. The User System handoff start and verify endpoints must recognise the `uom-su-mail-system` audience, return `access.allowed` for the requested permission, and allow the editor's Pages and production hostnames as safe `returnTo` destinations. A shared `.chemvault.science` session cookie is supported as a secondary authentication path on the custom domain.

@@ -34,6 +34,108 @@ button {
   cursor: pointer;
 }
 
+.access-gate {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 50% 15%, rgba(102, 0, 153, 0.12), transparent 34%),
+    #e9ebf1;
+}
+
+.access-gate-card {
+  width: min(540px, 100%);
+  padding: 40px;
+  background: #fff;
+  border-top: 5px solid #660099;
+  box-shadow: 0 18px 46px rgba(43, 37, 48, 0.16);
+  text-align: center;
+}
+
+.access-gate-kicker {
+  color: #660099;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.7px;
+  text-transform: uppercase;
+}
+
+.access-gate-mark {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  margin: 24px auto 20px;
+  border: 3px solid #ddd2e3;
+  border-radius: 50%;
+}
+
+.access-gate-mark span {
+  position: absolute;
+  inset: 10px;
+  background: #660099;
+  border-radius: 50%;
+}
+
+.access-gate-mark.is-busy {
+  border-top-color: #660099;
+  animation: access-gate-spin 900ms linear infinite;
+}
+
+.access-gate-card h1 {
+  margin: 0 0 12px;
+  color: #2b2530;
+  font-size: clamp(28px, 5vw, 38px);
+  letter-spacing: -0.6px;
+}
+
+.access-gate-card p {
+  max-width: 440px;
+  margin: 0 auto;
+  color: #625968;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.access-gate-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.access-gate-actions button,
+.access-gate-actions a {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid #660099;
+  border-radius: 4px;
+  font-weight: 740;
+  line-height: 40px;
+  text-decoration: none;
+}
+
+.access-gate-actions button {
+  color: #fff;
+  background: #660099;
+}
+
+.access-gate-actions a {
+  color: #660099;
+  background: #fff;
+}
+
+.access-gate-actions button:focus-visible,
+.access-gate-actions a:focus-visible {
+  outline: 3px solid rgba(255, 204, 51, 0.82);
+  outline-offset: 3px;
+}
+
+@keyframes access-gate-spin {
+  to { transform: rotate(360deg); }
+}
+
 .studio-shell {
   min-height: 100vh;
   padding-bottom: 32px;
