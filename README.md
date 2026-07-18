@@ -15,6 +15,7 @@ The published site also contains the formal Privacy Notice used by the Mail Syst
 - Independently show or hide the opening copy, information table, key points, action button, follow-up note, sign-off and contact panel.
 - Drag Outlook-safe headings, paragraphs, bullet lists, callouts, dividers and spacing components from the palette into the email preview.
 - Reorder or delete body components directly in the preview using Drag, Up, Down and Delete controls.
+- Add or delete individual numbered key points and bullet-list items directly inside the preview; numbered lists renumber automatically.
 - Synchronise visual changes into the HTML source automatically.
 - Apply source-code changes back to the visual preview after a short pause.
 - Protect the official University logo, departmental identity and safety footer from deletion in both the visual builder and HTML source.

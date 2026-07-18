@@ -251,7 +251,12 @@ export function App() {
       .mail-studio-block-toolbar button:hover { color: #660099 !important; border-color: #9e6db2 !important; }
       .mail-studio-block-toolbar button:disabled { cursor: not-allowed !important; opacity: .35 !important; }
       .mail-studio-block-toolbar .drag-handle { cursor: grab !important; color: #660099 !important; }
+      .mail-studio-block-toolbar .add-point-control { color: #660099 !important; }
       .mail-studio-block-toolbar .delete-control { color: #8b3232 !important; }
+      .mail-studio-list-point-control { width: 62px !important; padding: 3px 0 9px 8px !important; text-align: right !important; vertical-align: top !important; }
+      .mail-studio-list-point-control button { height: 22px !important; margin: 0 !important; padding: 0 6px !important; color: #8b3232 !important; background: #ffffff !important; border: 1px solid #d2c7d7 !important; border-radius: 3px !important; cursor: pointer !important; font: 700 9px/20px Arial, sans-serif !important; white-space: nowrap !important; }
+      .mail-studio-list-point-control button:hover { color: #660099 !important; border-color: #9e6db2 !important; }
+      .mail-studio-list-point-control button:disabled { cursor: not-allowed !important; opacity: .35 !important; }
       .mail-studio-protected-toolbar { background: #fff8e8 !important; border-color: #e2ce91 !important; color: #5c4c25 !important; }
       .mail-studio-protected-toolbar .locked-badge { color: #7d5d00 !important; font-size: 9px !important; font-weight: 800 !important; letter-spacing: .4px !important; text-transform: uppercase !important; }
       .mail-studio-drop-zone { height: 5px !important; margin: 0 !important; border: 1px dashed transparent !important; border-radius: 4px !important; transition: height 100ms ease, background-color 100ms ease, border-color 100ms ease !important; }
@@ -311,11 +316,90 @@ export function App() {
       button.type = "button";
       button.textContent = label;
       button.title = title;
+      button.setAttribute("aria-label", title);
       button.className = className;
       button.contentEditable = "false";
       button.addEventListener("mousedown", (event) => event.preventDefault());
       button.addEventListener("click", onClick);
       return button;
+    };
+
+    const listPointEditorAttributes = [
+      "contenteditable",
+      "spellcheck",
+      "data-mail-studio-editable",
+      "data-mail-studio-label",
+      "data-mail-studio-region",
+      "data-mail-studio-field",
+      "aria-label",
+      "role",
+    ];
+
+    const getListRows = (block) => {
+      const tableBody = block.tBodies?.[0];
+      if (!tableBody) return [];
+      return [...tableBody.rows].filter((row) => !row.hasAttribute("data-mail-studio-editor-only"));
+    };
+
+    const removeListPointEditorMetadata = (row) => {
+      row.querySelectorAll("[data-mail-studio-editor-only]").forEach((element) => element.remove());
+      [row, ...row.querySelectorAll("*")].forEach((element) => {
+        listPointEditorAttributes.forEach((attribute) => element.removeAttribute(attribute));
+      });
+    };
+
+    const renumberListRows = (block) => {
+      if (!block.querySelector(".key-point-row")) return;
+      getListRows(block).forEach((row, rowIndex) => {
+        if (row.cells[0]) row.cells[0].textContent = String(rowIndex + 1).padStart(2, "0");
+      });
+    };
+
+    const addListPoint = (block, blockLabel) => {
+      const rows = getListRows(block);
+      const sourceRow = rows.at(-1);
+      const tableBody = block.tBodies?.[0];
+      if (!sourceRow || !tableBody) return;
+
+      const newRow = sourceRow.cloneNode(true);
+      removeListPointEditorMetadata(newRow);
+      const contentCell = newRow.cells[1];
+      const title = contentCell?.querySelector(".key-point-title");
+      const detail = contentCell?.querySelector(".key-point-detail");
+
+      if (title && detail) {
+        title.textContent = "New key point";
+        detail.textContent = "Add supporting information here.";
+      } else if (contentCell) {
+        contentCell.textContent = "New bullet point.";
+      }
+
+      tableBody.appendChild(newRow);
+      renumberListRows(block);
+      const next = serializeEmailDocument(doc);
+      commitBuilderChange(next, "List point added in preview", `Point added to ${blockLabel}`);
+    };
+
+    const addListPointControls = (block, blockLabel) => {
+      const rows = getListRows(block);
+      rows.forEach((row, rowIndex) => {
+        const controlCell = doc.createElement("td");
+        controlCell.dataset.mailStudioEditorOnly = "true";
+        controlCell.className = "mail-studio-list-point-control";
+        controlCell.contentEditable = "false";
+        const removePoint = createControlButton("Delete", `Delete point ${rowIndex + 1} from ${blockLabel}`, () => {
+          const currentRows = getListRows(block);
+          if (currentRows.length <= 1) return;
+          row.remove();
+          renumberListRows(block);
+          const next = serializeEmailDocument(doc);
+          commitBuilderChange(next, "List point removed in preview", `Point removed from ${blockLabel}`);
+        }, "delete-control");
+        removePoint.disabled = rows.length <= 1;
+        if (removePoint.disabled) removePoint.title = "Delete the whole component to remove its final point";
+        controlCell.appendChild(removePoint);
+        row.appendChild(controlCell);
+      });
     };
 
     const handleDrop = (event, beforeBlockId = null) => {
@@ -390,6 +474,10 @@ export function App() {
       const label = doc.createElement("span");
       label.className = "block-label";
       label.textContent = blockLabel;
+      const isListBlock = block.dataset.contentBlockType === "bullets";
+      const addPoint = isListBlock
+        ? createControlButton("Add point", `Add a point to ${blockLabel}`, () => addListPoint(block, blockLabel), "add-point-control")
+        : null;
       const up = createControlButton("Up", `Move ${blockLabel} up`, () => {
         const current = getVisibleBlocks();
         const currentIndex = current.findIndex((item) => item.dataset.contentBlock === blockId);
@@ -415,9 +503,12 @@ export function App() {
         commitBuilderChange(next, "Component removed in preview", `${blockLabel} removed`);
       }, "delete-control");
 
-      toolbar.append(dragHandle, label, up, down, remove);
+      toolbar.append(dragHandle, label);
+      if (addPoint) toolbar.appendChild(addPoint);
+      toolbar.append(up, down, remove);
       bodyContent.insertBefore(dropZone, block);
       bodyContent.insertBefore(toolbar, block);
+      if (isListBlock) addListPointControls(block, blockLabel);
     });
     if (bodyContent) bodyContent.appendChild(createDropZone());
 
