@@ -18,6 +18,16 @@ function initialsFor(user) {
   return initials || "CV";
 }
 
+function formatDraftDate(timestamp) {
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(timestamp));
+}
+
 function WorkspaceHeader({ user, onLogout, logoutSlot = null, isLoggingOut = false }) {
   const displayName = displayNameFor(user);
   const email = typeof user?.email === "string" ? user.email.trim() : "";
@@ -62,7 +72,10 @@ function WorkspaceFooter() {
 
 export function WorkspaceChooser({
   user,
+  draft = null,
   onCreateEmail,
+  onResumeDraft,
+  onDeleteDraft,
   onSearchArchive,
   onLogout,
   logoutSlot = null,
@@ -81,6 +94,24 @@ export function WorkspaceChooser({
           <h1 id="workspace-chooser-title">What would you like to do?</h1>
           <p>Create a publication-ready Manchester email or find a message your team has saved before.</p>
         </div>
+
+        {draft && (
+          <section className="workspace-draft" aria-labelledby="workspace-draft-title">
+            <div className="workspace-draft__copy">
+              <span className="workspace-draft__eyebrow">Saved draft</span>
+              <h2 id="workspace-draft-title">{draft.subject || "Untitled email"}</h2>
+              <p>Stored only in this browser. Drafts expire automatically 7 days after their most recent save.</p>
+              <dl>
+                <div><dt>Last saved</dt><dd>{formatDraftDate(draft.updatedAt)}</dd></div>
+                <div><dt>Expires</dt><dd>{formatDraftDate(draft.expiresAt)}</dd></div>
+              </dl>
+            </div>
+            <div className="workspace-draft__actions">
+              <button type="button" onClick={onResumeDraft}>Continue editing</button>
+              <button type="button" onClick={onDeleteDraft}>Delete draft</button>
+            </div>
+          </section>
+        )}
 
         <div className="workspace-chooser__actions" aria-label="Mail workspace actions">
           <button className="workspace-action workspace-action--primary" type="button" onClick={onCreateEmail}>

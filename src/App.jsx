@@ -25,6 +25,12 @@ import { DEFAULT_PRESET_ID, EMAIL_PRESETS, getPresetById } from "./emailPresets.
 import { ArchivePanel } from "./ArchivePanel.jsx";
 import { archiveEmailExport } from "./archiveClient.js";
 import { buildArchiveConfirmationDetails } from "./archiveConfirmation.js";
+import {
+  clearDraft,
+  isDraftExpired,
+  readDraft,
+  saveDraft,
+} from "./draftStore.js";
 import { ArchivedSession, ArchiveProgress, ArchiveWorkspace, WorkspaceChooser } from "./WorkspaceChooser.jsx";
 import {
   EDITOR_PHASE,
@@ -38,8 +44,6 @@ import {
   markVerificationCodePending,
   prepareEmailForArchive,
 } from "../shared/email-integrity.js";
-
-const STORAGE_KEY = "student-union-mail-studio:v6";
 
 const FONT_FAMILIES = ["Arial", "Verdana", "Tahoma", "Georgia", "Times New Roman"];
 const FONT_SIZES = [12, 14, 16, 18, 22, 28, 34];
@@ -107,7 +111,7 @@ const EDITABLE_REGIONS = [
 
 function readSavedDraft() {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+    const saved = readDraft(localStorage);
     if (saved && isUsableEmailHtml(saved.html)) {
       const restored = getProtectedContentIssues(saved.html).length > 0
         ? restoreProtectedContent(saved.html, initialTemplate)
@@ -118,8 +122,10 @@ function readSavedDraft() {
         subject: saved.subject || "Department of Chemistry Student Representatives | Student Feedback Forum",
         filename: saved.filename || "manchester-chemistry-student-feedback-forum.html",
         preset: saved.preset || DEFAULT_PRESET_ID,
+        draft: saved,
       };
     }
+    if (saved) clearDraft(localStorage);
   } catch {
     // A corrupt or unavailable local draft should never block the editor.
   }
@@ -130,6 +136,7 @@ function readSavedDraft() {
     subject: "Department of Chemistry Student Representatives | Student Feedback Forum",
     filename: "manchester-chemistry-student-feedback-forum.html",
     preset: DEFAULT_PRESET_ID,
+    draft: null,
   };
 }
 
@@ -196,6 +203,7 @@ export function App({ currentUser }) {
   const [signingOut, setSigningOut] = useState(false);
   const [editorPhase, setEditorPhase] = useState(EDITOR_PHASE.CHOOSER);
   const [archiveReceipt, setArchiveReceipt] = useState(null);
+  const [savedDraft, setSavedDraft] = useState(initialDraft.draft);
   const [pendingArchiveOperation, setPendingArchiveOperation] = useState("");
   const [archiveDetailsConfirmed, setArchiveDetailsConfirmed] = useState(false);
   const iframeRef = useRef(null);
@@ -262,6 +270,26 @@ export function App({ currentUser }) {
     return () => window.clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    if (!savedDraft) return undefined;
+    const remaining = Number(savedDraft.expiresAt) - Date.now();
+    const expireDraft = () => {
+      try {
+        clearDraft(localStorage);
+      } catch {
+        // The card still disappears even if browser storage is unavailable.
+      }
+      setSavedDraft(null);
+      showNotice("The saved draft expired after 7 days");
+    };
+    if (!Number.isFinite(remaining) || remaining <= 0) {
+      expireDraft();
+      return undefined;
+    }
+    const timer = window.setTimeout(expireDraft, remaining);
+    return () => window.clearTimeout(timer);
+  }, [savedDraft?.expiresAt, showNotice]);
+
   const signOut = useCallback(async () => {
     if (signingOut) return;
     setSigningOut(true);
@@ -284,7 +312,61 @@ export function App({ currentUser }) {
     }
   }, [showNotice, signingOut]);
 
+  const saveDraftAndReturnHome = useCallback(() => {
+    const protectedIssues = getProtectedContentIssues(html);
+    if (!canModifyDraft(editorPhase) || !isUsableEmailHtml(html) || protectedIssues.length > 0) {
+      showNotice("Restore the protected email structure before saving this draft");
+      return;
+    }
+    try {
+      const record = saveDraft(localStorage, {
+        html,
+        subject,
+        filename: normaliseFilename(filename),
+        preset: activePreset,
+      });
+      setSavedDraft(record);
+      setArchiveOpen(false);
+      setArchiveInitialId("");
+      setPendingArchiveOperation("");
+      setArchiveDetailsConfirmed(false);
+      setEditorPhase(EDITOR_PHASE.CHOOSER);
+      setSaveState("Draft saved locally");
+      showNotice("Draft saved for 7 days");
+    } catch {
+      setSaveState("Local save unavailable");
+      showNotice("The draft could not be saved in this browser");
+    }
+  }, [activePreset, editorPhase, filename, html, showNotice, subject]);
+
+  const resumeSavedDraft = useCallback(() => {
+    if (!savedDraft || isDraftExpired(savedDraft)) {
+      try {
+        clearDraft(localStorage);
+      } catch {
+        // Expired local data must not keep a stale card visible.
+      }
+      setSavedDraft(null);
+      showNotice("This draft has expired");
+      return;
+    }
+    setEditorPhase(EDITOR_PHASE.EDITING);
+    setSyncState("Saved draft reopened");
+  }, [savedDraft, showNotice]);
+
+  const deleteSavedDraft = useCallback(() => {
+    if (!savedDraft || !window.confirm("Delete this saved draft? This cannot be undone.")) return;
+    try {
+      clearDraft(localStorage);
+    } catch {
+      // Removing the in-memory record still hides the draft for this session.
+    }
+    setSavedDraft(null);
+    showNotice("Draft deleted");
+  }, [savedDraft, showNotice]);
+
   const startNewEmail = useCallback(() => {
+    if (savedDraft && !window.confirm("Create a new email and delete the current saved draft?")) return;
     const identified = ensureMessageNumber(initialTemplate, { forceNew: true });
     archiveLockRef.current = false;
     updateOrigin.current = "new-email";
@@ -301,14 +383,15 @@ export function App({ currentUser }) {
     setCodeError("");
     setLayoutWarningOpen(false);
     setLayoutWarningDismissed(false);
+    setSavedDraft(null);
     setSyncState("Visual and HTML are in sync");
     setEditorPhase(EDITOR_PHASE.EDITING);
     try {
-      localStorage.removeItem(STORAGE_KEY);
+      clearDraft(localStorage);
     } catch {
       // A blocked local store must not prevent creation of a fresh email.
     }
-  }, []);
+  }, [savedDraft]);
 
   const openArchiveSearch = useCallback(() => {
     setArchiveInitialId("");
@@ -370,11 +453,14 @@ export function App({ currentUser }) {
     setSaveState("Saving locally…");
     const timer = window.setTimeout(() => {
       try {
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify({ html, subject, filename: normaliseFilename(filename), preset: activePreset, updatedAt: Date.now() }),
-        );
-        setSaveState("Saved locally");
+        const record = saveDraft(localStorage, {
+          html,
+          subject,
+          filename: normaliseFilename(filename),
+          preset: activePreset,
+        });
+        setSavedDraft(record);
+        setSaveState("Draft saved locally");
       } catch {
         setSaveState("Local save unavailable");
       }
@@ -963,10 +1049,11 @@ export function App({ currentUser }) {
       setArchiveReceipt(receipt);
       setArchiveOpen(false);
       try {
-        localStorage.removeItem(STORAGE_KEY);
+        clearDraft(localStorage);
       } catch {
         // The archived server record remains authoritative if local storage is unavailable.
       }
+      setSavedDraft(null);
       setSyncState(`Immutable backup ${archived.archive.id} created`);
       setEditorPhase(EDITOR_PHASE.ARCHIVED);
       return archived;
@@ -1126,7 +1213,10 @@ export function App({ currentUser }) {
       <>
         <WorkspaceChooser
           user={currentUser}
+          draft={savedDraft}
           onCreateEmail={startNewEmail}
+          onResumeDraft={resumeSavedDraft}
+          onDeleteDraft={deleteSavedDraft}
           onSearchArchive={openArchiveSearch}
           onLogout={signOut}
           isLoggingOut={signingOut}
@@ -1174,6 +1264,7 @@ export function App({ currentUser }) {
           </button>
         </div>
         <div className="header-actions">
+          <AppButton className="secondary-on-dark" onClick={saveDraftAndReturnHome} disabled={Boolean(exportBusy || codeError || protectionIssues.length)} title="Save this email as a draft and return home">Home</AppButton>
           <AppButton className="secondary-on-dark" onClick={openArchiveSearch}>Backups</AppButton>
           <AppButton className="secondary-on-dark" onClick={resetTemplate}>Reset</AppButton>
           <AppButton className="secondary-on-dark" onClick={() => requestArchiveConfirmation("copy_html")} disabled={Boolean(exportBusy || codeError || protectionIssues.length)}>{exportBusy === "copy_html" ? "Archiving..." : "Copy HTML"}</AppButton>
