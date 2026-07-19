@@ -8,6 +8,11 @@ export const PUBLIC_ACCESS_RESTRICTION_TITLE = "Public services remain available
 export const PUBLIC_ACCESS_RESTRICTION_MESSAGE =
   `${ACCESS_RESTRICTION_MESSAGE} This public page remains available during the pre-release period.`;
 
+export const VERIFICATION_NOTICE_TITLE = "Verify a student representative announcement";
+
+export const VERIFICATION_NOTICE_MESSAGE =
+  "While the full mail workspace is awaiting approval from the University of Manchester Department of Chemistry and other relevant University departments, this public verification service remains available. Students can use the message number and verification code shown on an announcement to confirm its archive record.";
+
 export const WORKSPACE_PRE_RELEASE_TITLE = "Authorised pre-release access";
 
 export const WORKSPACE_PRE_RELEASE_MESSAGE =

@@ -16,7 +16,7 @@ createRoot(document.getElementById("root")).render(
     {isPrivacyNotice
       ? <PublicAccessNotice><PrivacyNotice /></PublicAccessNotice>
       : isVerificationPage
-        ? <PublicAccessNotice><VerifyMessage /></PublicAccessNotice>
+        ? <PublicAccessNotice purpose="verification"><VerifyMessage /></PublicAccessNotice>
         : (
           <AccessGate>
             {(currentUser) => (
