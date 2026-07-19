@@ -13,3 +13,4 @@ When implementing from a selected generated mock, treat that image as the source
 - Public verification and privacy pages remain usable, but must present the dismissible restriction notice on entry.
 - Access notices must follow the restrained institutional-document language used by the verification and privacy pages: formal masthead, left-aligned hierarchy, explicit service-status rows, and no generic alert-card decoration.
 - Display the visible `Restricted` state in red. Use `Pre-release access` without the word `position` in public-notice footers.
+- During the brief permission check or login redirect, show only the verification animation. Do not flash the institutional masthead, explanatory copy, footer, or privacy link before the final access state is known.

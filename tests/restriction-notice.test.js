@@ -23,6 +23,15 @@ test("restricted access copy explains the pending University approval", () => {
   assert.match(accessGateSource, /Open public verification/);
 });
 
+test("access verification uses only a minimal animation while the check is in progress", () => {
+  assert.match(accessGateSource, /if \(isBusy\)/);
+  assert.match(accessGateSource, /className="access-checking"/);
+  assert.match(accessGateSource, /className="access-checking-indicator"/);
+  assert.match(accessGateSource, /aria-label="Verifying access"/);
+  assert.doesNotMatch(accessGateSource, /Checking your access/);
+  assert.doesNotMatch(accessGateSource, /Redirecting to sign in/);
+});
+
 test("both public pages keep their content and show a dismissible modal notice", () => {
   assert.match(mainSource, /<PublicAccessNotice><PrivacyNotice \/><\/PublicAccessNotice>/);
   assert.match(mainSource, /<PublicAccessNotice><VerifyMessage \/><\/PublicAccessNotice>/);

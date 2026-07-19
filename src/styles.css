@@ -34,6 +34,41 @@ button {
   cursor: pointer;
 }
 
+.access-checking {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  background: #e8e8ed;
+}
+
+.access-checking-indicator {
+  width: min(180px, 42vw);
+  height: 3px;
+  overflow: hidden;
+  background: #d3ced6;
+}
+
+.access-checking-indicator span {
+  display: block;
+  width: 40%;
+  height: 100%;
+  background: #660099;
+  animation: access-checking-slide 900ms ease-in-out infinite;
+}
+
+@keyframes access-checking-slide {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(350%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .access-checking-indicator span {
+    width: 100%;
+    animation: none;
+  }
+}
+
 .access-gate {
   min-height: 100vh;
   display: grid;
@@ -164,36 +199,6 @@ button {
   color: #5f5663;
   font-size: 15px;
   line-height: 1.72;
-}
-
-.access-gate-progress {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 28px;
-}
-
-.access-gate-progress > span {
-  width: 118px;
-  height: 3px;
-  overflow: hidden;
-  background: #d8d2da;
-}
-
-.access-gate-progress > span::after {
-  content: "";
-  display: block;
-  width: 46%;
-  height: 100%;
-  background: #660099;
-  animation: access-gate-progress 1.25s ease-in-out infinite alternate;
-}
-
-.access-gate-progress p {
-  margin: 0;
-  color: #625968;
-  font-size: 12px;
-  font-weight: 700;
 }
 
 .access-gate-position {
@@ -333,11 +338,6 @@ button {
   color: #ffcc33;
   font-weight: 750;
   text-underline-offset: 2px;
-}
-
-@keyframes access-gate-progress {
-  from { transform: translateX(-4%); }
-  to { transform: translateX(121%); }
 }
 
 .public-restriction-backdrop {

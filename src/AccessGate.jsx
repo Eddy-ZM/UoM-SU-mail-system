@@ -62,18 +62,24 @@ export function AccessGate({ children }) {
   }
 
   const isBusy = access.status === "checking" || access.status === "redirecting";
+  if (isBusy) {
+    return (
+      <main className="access-checking" aria-busy="true">
+        <div className="access-checking-indicator" role="status" aria-label="Verifying access">
+          <span aria-hidden="true" />
+        </div>
+      </main>
+    );
+  }
+
   const isForbidden = access.status === "forbidden";
-  const title = isBusy
-    ? access.status === "redirecting" ? "Opening ChemVault login" : "Verifying access"
-    : isForbidden ? ACCESS_RESTRICTION_TITLE : "Authentication unavailable";
-  const message = isBusy
-    ? "Your signed-in account and service permission are being verified through ChemVault User System."
-    : isForbidden
-      ? ACCESS_RESTRICTION_MESSAGE
-      : "The service remains closed because ChemVault User System could not confirm your access at this time.";
+  const title = isForbidden ? ACCESS_RESTRICTION_TITLE : "Authentication unavailable";
+  const message = isForbidden
+    ? ACCESS_RESTRICTION_MESSAGE
+    : "The service remains closed because ChemVault User System could not confirm your access at this time.";
 
   return (
-    <main className="access-gate" aria-busy={isBusy ? "true" : "false"}>
+    <main className="access-gate">
       <section className="access-gate-document" aria-live="polite">
         <header className="access-gate-masthead">
           <div className="access-gate-identity">
@@ -82,28 +88,22 @@ export function AccessGate({ children }) {
           </div>
           <div className="access-gate-status">
             <span>Service status</span>
-            <strong>{isForbidden ? "Pre-release access" : "Secure access check"}</strong>
+            <strong>{isForbidden ? "Pre-release access" : "Access unavailable"}</strong>
           </div>
         </header>
 
         <div className="access-gate-service-strip">
           <span>Manchester Chemistry Representative Mail Studio</span>
-          <strong>{isForbidden ? "Limited access" : "Identity verification"}</strong>
+          <strong>{isForbidden ? "Limited access" : "Verification unavailable"}</strong>
         </div>
 
         <div className="access-gate-body">
           <div className="access-gate-copy">
             <p className="access-gate-kicker">
-              {isForbidden ? "Pre-release service notice" : "Secure access check"}
+              {isForbidden ? "Pre-release service notice" : "Authentication service notice"}
             </p>
             <h1>{title}</h1>
             <p className="access-gate-lead">{message}</p>
-            {isBusy && (
-              <div className="access-gate-progress" role="status">
-                <span aria-hidden="true" />
-                <p>{access.status === "redirecting" ? "Redirecting to sign in…" : "Checking your access…"}</p>
-              </div>
-            )}
           </div>
 
           {isForbidden && (
@@ -126,19 +126,17 @@ export function AccessGate({ children }) {
             </aside>
           )}
 
-          {!isBusy && !isForbidden && (
+          {!isForbidden && (
             <aside className="access-gate-advisory">
               Access will remain closed until your account and permission can be verified securely.
             </aside>
           )}
 
-          {!isBusy && (
-            <div className="access-gate-actions">
-              {isForbidden && <a className="is-primary" href="/verify/">Open public verification</a>}
-              <button type="button" onClick={verifyAccess}>Check access again</button>
-              <a href="https://user.chemvault.science/">Review account access</a>
-            </div>
-          )}
+          <div className="access-gate-actions">
+            {isForbidden && <a className="is-primary" href="/verify/">Open public verification</a>}
+            <button type="button" onClick={verifyAccess}>Check access again</button>
+            <a href="https://user.chemvault.science/">Review account access</a>
+          </div>
         </div>
 
         <footer className="access-gate-footer">
