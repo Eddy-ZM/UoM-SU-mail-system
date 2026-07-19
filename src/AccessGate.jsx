@@ -3,6 +3,8 @@ import {
   ACCESS_RESTRICTION_MESSAGE,
   ACCESS_RESTRICTION_TITLE,
   publicPathFromRestriction,
+  SERVICE_ENTRY_DENIED_MESSAGE,
+  SERVICE_ENTRY_DENIED_TITLE,
 } from "../shared/service-restriction.js";
 
 const INITIAL_STATE = { status: "checking", loginUrl: null, user: null };
@@ -21,7 +23,7 @@ export function AccessGate({ children }) {
       });
       const payload = await response.json();
 
-      if (response.ok && payload.allowed === true && payload.user) {
+      if (response.ok && payload.allowed === true && payload.contentAllowed === true && payload.user) {
         setAccess({ status: "allowed", loginUrl: null, user: payload.user });
         return;
       }
@@ -33,7 +35,14 @@ export function AccessGate({ children }) {
       }
 
       if (response.status === 403) {
-        setAccess({ status: "forbidden", loginUrl: null, user: null });
+        const isRestricted = Boolean(payload.entryAllowed === true
+          && payload.contentAllowed === false
+          && payload.user);
+        setAccess({
+          status: isRestricted ? "restricted" : "forbidden",
+          loginUrl: null,
+          user: isRestricted ? payload.user : null,
+        });
         return;
       }
 
@@ -73,11 +82,19 @@ export function AccessGate({ children }) {
     );
   }
 
+  const isRestricted = access.status === "restricted";
   const isForbidden = access.status === "forbidden";
-  const title = isForbidden ? ACCESS_RESTRICTION_TITLE : "Authentication unavailable";
-  const message = isForbidden
+  const isDenied = isRestricted || isForbidden;
+  const title = isRestricted
+    ? ACCESS_RESTRICTION_TITLE
+    : isForbidden
+      ? SERVICE_ENTRY_DENIED_TITLE
+      : "Authentication unavailable";
+  const message = isRestricted
     ? ACCESS_RESTRICTION_MESSAGE
-    : "The service remains closed because ChemVault User System could not confirm your access at this time.";
+    : isForbidden
+      ? SERVICE_ENTRY_DENIED_MESSAGE
+      : "The service remains closed because ChemVault User System could not confirm your access at this time.";
 
   return (
     <main className="access-gate">
@@ -89,25 +106,29 @@ export function AccessGate({ children }) {
           </div>
           <div className="access-gate-status">
             <span>Service status</span>
-            <strong>{isForbidden ? "Pre-release access" : "Access unavailable"}</strong>
+            <strong>{isRestricted ? "Pre-release access" : isForbidden ? "Access denied" : "Access unavailable"}</strong>
           </div>
         </header>
 
         <div className="access-gate-service-strip">
           <span>Manchester Chemistry Representative Mail Studio</span>
-          <strong>{isForbidden ? "Limited access" : "Verification unavailable"}</strong>
+          <strong>{isRestricted ? "Limited access" : isForbidden ? "Entry denied" : "Verification unavailable"}</strong>
         </div>
 
         <div className="access-gate-body">
           <div className="access-gate-copy">
             <p className="access-gate-kicker">
-              {isForbidden ? "Pre-release service notice" : "Authentication service notice"}
+              {isRestricted
+                ? "Pre-release service notice"
+                : isForbidden
+                  ? "Service entry notice"
+                  : "Authentication service notice"}
             </p>
             <h1>{title}</h1>
             <p className="access-gate-lead">{message}</p>
           </div>
 
-          {isForbidden && (
+          {isRestricted && (
             <aside className="access-gate-position" aria-label="Current access position">
               <p>Current access position</p>
               <dl>
@@ -127,19 +148,21 @@ export function AccessGate({ children }) {
             </aside>
           )}
 
-          {!isForbidden && (
+          {!isRestricted && (
             <aside className="access-gate-advisory">
-              Access will remain closed until your account and permission can be verified securely.
+              {isForbidden
+                ? "Entry remains closed until service access is granted to this account."
+                : "Access will remain closed until your account and permission can be verified securely."}
             </aside>
           )}
 
           <div className="access-gate-actions">
-            {isForbidden && (
+            {isRestricted && (
               <a className="is-primary" href={publicPathFromRestriction("/verify/")}>Open public verification</a>
             )}
             <button type="button" onClick={verifyAccess}>Check access again</button>
             <a href="https://user.chemvault.science/">Review account access</a>
-            {isForbidden && (
+            {isDenied && (
               <form method="post" action="/api/access/logout">
                 <button type="submit">Sign out</button>
               </form>
@@ -152,7 +175,7 @@ export function AccessGate({ children }) {
             <strong>Manchester Chemistry Representative Mail Studio</strong>
             <span>Student representative communications service</span>
           </div>
-          <a href={isForbidden
+          <a href={isRestricted
             ? publicPathFromRestriction("/agreement/privacy-notice/")
             : "/agreement/privacy-notice/"}
           >

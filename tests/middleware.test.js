@@ -1,10 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { onRequest } from "../functions/_middleware.js";
-import { HANDOFF_COOKIE_NAME } from "../functions/_lib/access-gate.js";
+import {
+  FULL_ACCESS_PERMISSION,
+  HANDOFF_COOKIE_NAME,
+  REQUIRED_PERMISSION,
+} from "../functions/_lib/access-gate.js";
 import {
   ACCESS_RESTRICTION_MESSAGE,
   ACCESS_RESTRICTION_TITLE,
+  SERVICE_ENTRY_DENIED_MESSAGE,
+  SERVICE_ENTRY_DENIED_TITLE,
 } from "../shared/service-restriction.js";
 
 const handoffToken = "header.payload.middleware-signature";
@@ -90,6 +96,30 @@ test("an allowed callback stores the host token and strips it from the URL", asy
   assert.match(response.headers.get("set-cookie"), /HttpOnly; Secure; SameSite=Lax/);
 });
 
+test("a content-restricted callback stores the verified token before showing the restriction page", async () => {
+  globalThis.fetch = async (url) => {
+    const permission = new URL(url).searchParams.get("permission");
+    return Response.json({
+      access: {
+        allowed: permission === REQUIRED_PERMISSION,
+        reason: permission === REQUIRED_PERMISSION ? "entry_granted" : "content_denied",
+      },
+      user: { id: "user-1", email: "rep@example.test" },
+      handoff: { audience: "uom-su-mail-system", expiresAt: Math.floor(Date.now() / 1000) + 600 },
+    });
+  };
+  const response = await onRequest({
+    request: new Request(`https://uom-su-mail-system.pages.dev/?token=${handoffToken}&provider=chemvault-user`),
+    env: {},
+    next: async () => { throw new Error("callback must redirect before showing the restriction page"); },
+  });
+
+  assert.equal(response.status, 303);
+  assert.equal(response.headers.get("location"), "https://uom-su-mail-system.pages.dev/");
+  assert.match(response.headers.get("set-cookie"), new RegExp(`^${HANDOFF_COOKIE_NAME}=`));
+  assert.match(response.headers.get("set-cookie"), /HttpOnly; Secure; SameSite=Lax/);
+});
+
 test("a stored handoff token is reverified before every editor response", async () => {
   let nextCalls = 0;
   globalThis.fetch = async () => Response.json({
@@ -131,8 +161,43 @@ test("a revoked permission returns 403 and never serves the editor", async () =>
 
   assert.equal(response.status, 403);
   const body = await response.text();
+  assert.match(body, new RegExp(SERVICE_ENTRY_DENIED_TITLE));
+  assert.match(body, new RegExp(SERVICE_ENTRY_DENIED_MESSAGE.replaceAll("'", "&#039;")));
+  assert.doesNotMatch(body, /Current access position/);
+  assert.doesNotMatch(body, /\/verify\/\?restrictionNotice=shown/);
+  assert.match(body, /<form method="post" action="\/api\/access\/logout">/);
+  assert.match(body, />Sign out<\/button>/);
+  assert.match(
+    response.headers.get("content-security-policy"),
+    /form-action 'self' https:\/\/user\.chemvault\.science/,
+  );
+});
+
+test("content denial keeps public pages available but never serves the workspace", async () => {
+  globalThis.fetch = async (url) => {
+    const permission = new URL(url).searchParams.get("permission");
+    return Response.json({
+      access: {
+        allowed: permission === REQUIRED_PERMISSION,
+        reason: permission === REQUIRED_PERMISSION ? "entry_granted" : "content_denied",
+      },
+      user: { id: "user-1", email: "rep@example.test" },
+      handoff: { audience: "uom-su-mail-system", expiresAt: Math.floor(Date.now() / 1000) + 600 },
+    });
+  };
+  const response = await onRequest({
+    request: new Request("https://uom-su-mail-system.pages.dev/", {
+      headers: { cookie: `${HANDOFF_COOKIE_NAME}=${encodeURIComponent(handoffToken)}` },
+    }),
+    env: {},
+    next: async () => { throw new Error("content-restricted users must never receive the workspace"); },
+  });
+
+  assert.equal(response.status, 403);
+  const body = await response.text();
   assert.match(body, new RegExp(ACCESS_RESTRICTION_TITLE));
   assert.match(body, new RegExp(ACCESS_RESTRICTION_MESSAGE.replaceAll("'", "&#039;")));
+  assert.match(body, /Current access position/);
   assert.match(body, /\/verify\/\?restrictionNotice=shown/);
   assert.match(body, /\/agreement\/privacy-notice\/\?restrictionNotice=shown/);
   assert.match(body, /<form method="post" action="\/api\/access\/logout">/);
@@ -141,6 +206,7 @@ test("a revoked permission returns 403 and never serves the editor", async () =>
     response.headers.get("content-security-policy"),
     /form-action 'self' https:\/\/user\.chemvault\.science/,
   );
+  assert.equal(FULL_ACCESS_PERMISSION, "feature:uom-su-mail-system:full_access");
 });
 
 test("User System failures return 503 and fail closed", async () => {

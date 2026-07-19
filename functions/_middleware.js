@@ -13,6 +13,8 @@ import {
 import {
   ACCESS_RESTRICTION_MESSAGE,
   ACCESS_RESTRICTION_TITLE,
+  SERVICE_ENTRY_DENIED_MESSAGE,
+  SERVICE_ENTRY_DENIED_TITLE,
 } from "../shared/service-restriction.js";
 
 const STATUS_PATH = "/api/access/status";
@@ -27,7 +29,7 @@ export async function onRequest(context) {
   const callbackToken = readHandoffCallbackToken(context.request);
   if (callbackToken) {
     const callbackDecision = await verifyHandoffAccess(callbackToken, context.request, context.env);
-    if (callbackDecision.kind === "allowed" || (callbackDecision.kind === "forbidden" && callbackDecision.handoffExpiresAt)) {
+    if (callbackDecision.kind === "allowed" || (callbackDecision.kind === "restricted" && callbackDecision.handoffExpiresAt)) {
       return new Response(null, {
         status: 303,
         headers: noStoreHeaders({
@@ -47,8 +49,8 @@ export async function onRequest(context) {
     }
     if (callbackDecision.kind === "forbidden") {
       return gatePageResponse(
-        ACCESS_RESTRICTION_TITLE,
-        ACCESS_RESTRICTION_MESSAGE,
+        SERVICE_ENTRY_DENIED_TITLE,
+        SERVICE_ENTRY_DENIED_MESSAGE,
         403,
         { "set-cookie": clearHandoffCookie() },
       );
@@ -73,9 +75,19 @@ export async function onRequest(context) {
 
   if (decision.kind === "forbidden") {
     return gatePageResponse(
+      SERVICE_ENTRY_DENIED_TITLE,
+      SERVICE_ENTRY_DENIED_MESSAGE,
+      403,
+    );
+  }
+
+  if (decision.kind === "restricted") {
+    return gatePageResponse(
       ACCESS_RESTRICTION_TITLE,
       ACCESS_RESTRICTION_MESSAGE,
       403,
+      {},
+      { limitedAccess: true },
     );
   }
 

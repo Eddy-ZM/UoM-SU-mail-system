@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { onRequestGet, onRequestPost } from "../functions/api/archives/index.js";
+import {
+  FULL_ACCESS_PERMISSION,
+  REQUIRED_PERMISSION,
+} from "../functions/_lib/access-gate.js";
 
 const originalFetch = globalThis.fetch;
 const sharedSession = "shared.session.archive-denial";
@@ -30,11 +34,27 @@ function restrictedContext(method) {
 }
 
 test("restricted users cannot query or create archives", async () => {
-  globalThis.fetch = async () => new Response(null, { status: 403 });
+  const checkedPermissions = [];
+  globalThis.fetch = async (url) => {
+    const permission = new URL(url).searchParams.get("permission");
+    checkedPermissions.push(permission);
+    return Response.json({
+      allowed: permission === REQUIRED_PERMISSION,
+      reason: permission === REQUIRED_PERMISSION ? "entry_granted" : "content_denied",
+      user: { id: "user-1", email: "rep@example.test" },
+    });
+  };
 
   for (const [method, handler] of [["GET", onRequestGet], ["POST", onRequestPost]]) {
     const response = await handler(restrictedContext(method));
     assert.equal(response.status, 403);
     assert.deepEqual(await response.json(), { error: "permission_denied" });
   }
+
+  assert.deepEqual(checkedPermissions, [
+    REQUIRED_PERMISSION,
+    FULL_ACCESS_PERMISSION,
+    REQUIRED_PERMISSION,
+    FULL_ACCESS_PERMISSION,
+  ]);
 });

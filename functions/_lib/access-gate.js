@@ -1,6 +1,7 @@
 import { publicPathFromRestriction } from "../../shared/service-restriction.js";
 
 export const REQUIRED_PERMISSION = "service:uom-su-mail-system:access";
+export const FULL_ACCESS_PERMISSION = "feature:uom-su-mail-system:full_access";
 export const HANDOFF_AUDIENCE = "uom-su-mail-system";
 export const HANDOFF_COOKIE_NAME = "__Host-uom_su_mail_handoff";
 
@@ -79,6 +80,95 @@ export async function checkRequestAccess(request, env = {}, fetchImplementation 
 export async function verifyHandoffAccess(token, request, env = {}, fetchImplementation = fetch) {
   if (!isSafeToken(token)) return { kind: "unauthenticated", reason: "invalid_handoff_token" };
 
+  const headers = forwardedHeaders(request);
+  headers.set("authorization", `Bearer ${token}`);
+  headers.delete("cookie");
+
+  const entryDecision = await verifyHandoffPermission(
+    REQUIRED_PERMISSION,
+    headers,
+    env,
+    fetchImplementation,
+  );
+  if (entryDecision.kind !== "allowed") return entryDecision;
+
+  const contentDecision = await verifyHandoffPermission(
+    FULL_ACCESS_PERMISSION,
+    headers,
+    env,
+    fetchImplementation,
+  );
+  if (contentDecision.kind !== "allowed" && contentDecision.kind !== "forbidden") {
+    return contentDecision;
+  }
+  if (contentDecision.user.id !== entryDecision.user.id) {
+    return { kind: "unavailable", reason: "user_system_identity_mismatch" };
+  }
+  if (contentDecision.kind === "forbidden") {
+    return {
+      ...contentDecision,
+      kind: "restricted",
+      user: entryDecision.user,
+      entryReason: entryDecision.reason,
+      handoffExpiresAt: entryDecision.handoffExpiresAt,
+      authentication: "handoff",
+    };
+  }
+
+  return {
+    kind: "allowed",
+    reason: contentDecision.reason,
+    entryReason: entryDecision.reason,
+    user: entryDecision.user,
+    handoffExpiresAt: entryDecision.handoffExpiresAt,
+    authentication: "handoff",
+  };
+}
+
+export async function checkSharedCookieAccess(request, env = {}, fetchImplementation = fetch) {
+  const headers = forwardedHeaders(request);
+  const entryDecision = await checkSharedPermission(
+    request,
+    REQUIRED_PERMISSION,
+    headers,
+    env,
+    fetchImplementation,
+  );
+  if (entryDecision.kind !== "allowed") return entryDecision;
+
+  const contentDecision = await checkSharedPermission(
+    request,
+    FULL_ACCESS_PERMISSION,
+    headers,
+    env,
+    fetchImplementation,
+  );
+  if (contentDecision.kind !== "allowed" && contentDecision.kind !== "forbidden") {
+    return contentDecision;
+  }
+  if (contentDecision.user.id !== entryDecision.user.id) {
+    return { kind: "unavailable", reason: "user_system_identity_mismatch" };
+  }
+  if (contentDecision.kind === "forbidden") {
+    return {
+      ...contentDecision,
+      kind: "restricted",
+      user: entryDecision.user,
+      entryReason: entryDecision.reason,
+      authentication: "shared-cookie",
+    };
+  }
+
+  return {
+    kind: "allowed",
+    reason: contentDecision.reason,
+    entryReason: entryDecision.reason,
+    user: entryDecision.user,
+    authentication: "shared-cookie",
+  };
+}
+
+async function verifyHandoffPermission(permission, headers, env, fetchImplementation) {
   let verifyUrl;
   try {
     verifyUrl = new URL("/api/auth/handoff/verify", getUserSystemOrigin(env));
@@ -86,11 +176,8 @@ export async function verifyHandoffAccess(token, request, env = {}, fetchImpleme
     return { kind: "unavailable", reason: "invalid_user_system_origin" };
   }
   verifyUrl.searchParams.set("audience", HANDOFF_AUDIENCE);
-  verifyUrl.searchParams.set("permission", REQUIRED_PERMISSION);
+  verifyUrl.searchParams.set("permission", permission);
 
-  const headers = forwardedHeaders(request);
-  headers.set("authorization", `Bearer ${token}`);
-  headers.delete("cookie");
   const response = await fetchUserSystem(verifyUrl, headers, env, fetchImplementation);
   if (response.kind) return response;
 
@@ -100,36 +187,31 @@ export async function verifyHandoffAccess(token, request, env = {}, fetchImpleme
   if (!httpResponse.ok) return { kind: "unavailable", reason: "user_system_unavailable" };
 
   const payload = await parseJson(httpResponse);
-  if (!payload) return { kind: "unavailable", reason: "invalid_user_system_response" };
-  if (payload.access?.allowed !== true) {
-    return {
-      kind: "forbidden",
-      reason: typeof payload.access?.reason === "string" ? payload.access.reason : "permission_not_granted",
-      handoffExpiresAt: payload.handoff?.expiresAt,
-    };
+  const user = normalizedUser(payload?.user);
+  if (!payload || typeof payload.access?.allowed !== "boolean") {
+    return { kind: "unavailable", reason: "invalid_user_system_response" };
   }
-
-  const user = normalizedUser(payload.user);
   if (!user) return { kind: "unavailable", reason: "invalid_user_system_profile" };
+
   return {
-    kind: "allowed",
-    reason: typeof payload.access.reason === "string" ? payload.access.reason : "permission_granted",
+    kind: payload.access.allowed ? "allowed" : "forbidden",
+    reason: typeof payload.access.reason === "string" ? payload.access.reason : "permission_not_granted",
+    permission,
     user,
     handoffExpiresAt: payload.handoff?.expiresAt,
-    authentication: "handoff",
   };
 }
 
-export async function checkSharedCookieAccess(request, env = {}, fetchImplementation = fetch) {
+async function checkSharedPermission(request, permission, headers, env, fetchImplementation) {
   let accessUrl;
   try {
     accessUrl = new URL("/api/access/check", getUserSystemOrigin(env));
   } catch {
     return { kind: "unavailable", reason: "invalid_user_system_origin" };
   }
-  accessUrl.searchParams.set("permission", REQUIRED_PERMISSION);
+  accessUrl.searchParams.set("permission", permission);
 
-  const response = await fetchUserSystem(accessUrl, forwardedHeaders(request), env, fetchImplementation);
+  const response = await fetchUserSystem(accessUrl, headers, env, fetchImplementation);
   if (response.kind) return response;
 
   const { httpResponse } = response;
@@ -138,21 +220,17 @@ export async function checkSharedCookieAccess(request, env = {}, fetchImplementa
   if (!httpResponse.ok) return { kind: "unavailable", reason: "user_system_unavailable" };
 
   const payload = await parseJson(httpResponse);
-  if (!payload) return { kind: "unavailable", reason: "invalid_user_system_response" };
-  if (payload.allowed !== true) {
-    return {
-      kind: "forbidden",
-      reason: typeof payload.reason === "string" ? payload.reason : "permission_not_granted",
-    };
+  const user = normalizedUser(payload?.user);
+  if (!payload || typeof payload.allowed !== "boolean") {
+    return { kind: "unavailable", reason: "invalid_user_system_response" };
   }
-
-  const user = normalizedUser(payload.user);
   if (!user) return { kind: "unavailable", reason: "invalid_user_system_profile" };
+
   return {
-    kind: "allowed",
-    reason: typeof payload.reason === "string" ? payload.reason : "permission_granted",
+    kind: payload.allowed ? "allowed" : "forbidden",
+    reason: typeof payload.reason === "string" ? payload.reason : "permission_not_granted",
+    permission,
     user,
-    authentication: "shared-cookie",
   };
 }
 
@@ -242,12 +320,13 @@ export function jsonResponse(payload, status = 200, extraHeaders = {}) {
   });
 }
 
-export function gatePageResponse(title, message, status, extraHeaders = {}) {
+export function gatePageResponse(title, message, status, extraHeaders = {}, options = {}) {
   const safeTitle = escapeHtml(title);
   const safeMessage = escapeHtml(message);
-  const isRestricted = Number(status) === 403;
-  const statusLabel = isRestricted ? "Pre-release access" : "Secure access check";
-  const serviceLabel = isRestricted ? "Limited access" : "Identity verification";
+  const isDenied = Number(status) === 403;
+  const isRestricted = isDenied && options.limitedAccess === true;
+  const statusLabel = isRestricted ? "Pre-release access" : isDenied ? "Access denied" : "Secure access check";
+  const serviceLabel = isRestricted ? "Limited access" : isDenied ? "Entry denied" : "Identity verification";
   const position = isRestricted
     ? `<section class="position" aria-label="Current access position">
           <h2>Current access position</h2>
@@ -257,14 +336,16 @@ export function gatePageResponse(title, message, status, extraHeaders = {}) {
             <div><dt>Public verification</dt><dd class="available">Available</dd></div>
           </dl>
         </section>`
-    : `<aside class="advisory">Access will remain closed until your account and permission can be verified securely.</aside>`;
+    : `<aside class="advisory">${isDenied
+      ? "Entry remains closed until service access is granted to this account."
+      : "Access will remain closed until your account and permission can be verified securely."}</aside>`;
   const primaryAction = isRestricted
     ? `<a class="primary" href="${publicPathFromRestriction("/verify/")}">Open public verification</a>`
     : `<a class="primary" href="/">Try access again</a>`;
   const privacyHref = isRestricted
     ? publicPathFromRestriction("/agreement/privacy-notice/")
     : "/agreement/privacy-notice/";
-  const signOutAction = isRestricted
+  const signOutAction = isDenied
     ? `<form method="post" action="/api/access/logout"><button type="submit">Sign out</button></form>`
     : "";
   const body = `<!doctype html>
@@ -332,7 +413,7 @@ export function gatePageResponse(title, message, status, extraHeaders = {}) {
       </header>
       <div class="service-strip"><span>Manchester Chemistry Representative Mail Studio</span><strong>${serviceLabel}</strong></div>
       <div class="body">
-        <p class="kicker">${isRestricted ? "Pre-release service notice" : "Secure access check"}</p>
+        <p class="kicker">${isRestricted ? "Pre-release service notice" : isDenied ? "Service entry notice" : "Secure access check"}</p>
         <h1>${safeTitle}</h1>
         <p class="lead">${safeMessage}</p>
         ${position}

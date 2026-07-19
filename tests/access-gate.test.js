@@ -4,6 +4,7 @@ import {
   buildHandoffStartUrl,
   checkRequestAccess,
   cleanEditorReturnUrl,
+  FULL_ACCESS_PERMISSION,
   HANDOFF_AUDIENCE,
   HANDOFF_COOKIE_NAME,
   handoffCookie,
@@ -33,11 +34,11 @@ test("certificate challenges, privacy notice and compiled assets stay public whi
 });
 
 test("handoff verification sends audience and permission and trusts only access.allowed", async () => {
-  let capturedUrl;
-  let capturedOptions;
+  const capturedUrls = [];
+  const capturedOptions = [];
   const decision = await verifyHandoffAccess(token, editorRequest(), {}, async (url, options) => {
-    capturedUrl = new URL(url);
-    capturedOptions = options;
+    capturedUrls.push(new URL(url));
+    capturedOptions.push(options);
     return Response.json({
       access: { allowed: true, reason: "explicit_permission" },
       user: { id: "user-1", email: "rep@example.test", name: "Student Rep", avatarUrl: "https://example.test/avatar.png", permissions: [] },
@@ -46,11 +47,16 @@ test("handoff verification sends audience and permission and trusts only access.
   });
 
   assert.equal(decision.kind, "allowed");
-  assert.equal(capturedUrl.pathname, "/api/auth/handoff/verify");
-  assert.equal(capturedUrl.searchParams.get("audience"), HANDOFF_AUDIENCE);
-  assert.equal(capturedUrl.searchParams.get("permission"), REQUIRED_PERMISSION);
-  assert.equal(capturedOptions.headers.get("authorization"), `Bearer ${token}`);
-  assert.equal(capturedOptions.headers.has("cookie"), false);
+  assert.deepEqual(
+    capturedUrls.map((url) => url.searchParams.get("permission")),
+    [REQUIRED_PERMISSION, FULL_ACCESS_PERMISSION],
+  );
+  for (const [index, capturedUrl] of capturedUrls.entries()) {
+    assert.equal(capturedUrl.pathname, "/api/auth/handoff/verify");
+    assert.equal(capturedUrl.searchParams.get("audience"), HANDOFF_AUDIENCE);
+    assert.equal(capturedOptions[index].headers.get("authorization"), `Bearer ${token}`);
+    assert.equal(capturedOptions[index].headers.has("cookie"), false);
+  }
   assert.deepEqual(decision.user, {
     id: "user-1",
     email: "rep@example.test",
@@ -71,6 +77,43 @@ test("handoff permissions fail closed even when the user payload lists a matchin
   assert.equal(decision.reason, "permission_not_granted");
 });
 
+test("entry access is checked before content access and a content deny becomes restricted", async () => {
+  const requestedPermissions = [];
+  const decision = await verifyHandoffAccess(token, editorRequest(), {}, async (url) => {
+    const permission = new URL(url).searchParams.get("permission");
+    requestedPermissions.push(permission);
+    return Response.json({
+      access: {
+        allowed: permission === REQUIRED_PERMISSION,
+        reason: permission === REQUIRED_PERMISSION ? "entry_granted" : "content_denied",
+      },
+      user: { id: "user-1", email: "rep@example.test" },
+      handoff: { audience: HANDOFF_AUDIENCE, expiresAt: Math.floor(Date.now() / 1000) + 600 },
+    });
+  });
+
+  assert.deepEqual(requestedPermissions, [REQUIRED_PERMISSION, FULL_ACCESS_PERMISSION]);
+  assert.equal(decision.kind, "restricted");
+  assert.equal(decision.reason, "content_denied");
+  assert.equal(decision.entryReason, "entry_granted");
+  assert.equal(decision.user.id, "user-1");
+});
+
+test("content access cannot be combined with a different verified identity", async () => {
+  let callCount = 0;
+  const decision = await verifyHandoffAccess(token, editorRequest(), {}, async () => {
+    callCount += 1;
+    return Response.json({
+      access: { allowed: callCount === 1, reason: callCount === 1 ? "entry_granted" : "content_denied" },
+      user: { id: `user-${callCount}`, email: `rep-${callCount}@example.test` },
+      handoff: { audience: HANDOFF_AUDIENCE, expiresAt: Math.floor(Date.now() / 1000) + 600 },
+    });
+  });
+
+  assert.equal(decision.kind, "unavailable");
+  assert.equal(decision.reason, "user_system_identity_mismatch");
+});
+
 test("a host-only handoff cookie is verified on every request", async () => {
   let verificationCount = 0;
   const request = editorRequest("/", { cookie: `${HANDOFF_COOKIE_NAME}=${encodeURIComponent(token)}` });
@@ -85,16 +128,16 @@ test("a host-only handoff cookie is verified on every request", async () => {
 
   assert.equal((await checkRequestAccess(request, {}, fetchImplementation)).kind, "allowed");
   assert.equal((await checkRequestAccess(request, {}, fetchImplementation)).kind, "allowed");
-  assert.equal(verificationCount, 2);
+  assert.equal(verificationCount, 4);
 });
 
 test("shared ChemVault cookie remains a fallback and is forwarded to access check", async () => {
-  let capturedUrl;
+  const capturedUrls = [];
   let capturedCookie;
   const sharedSession = "shared.session.jwt-signature";
   const request = editorRequest("/", { cookie: `chemvault_session=${sharedSession}` });
   const decision = await checkRequestAccess(request, {}, async (url, options) => {
-    capturedUrl = new URL(url);
+    capturedUrls.push(new URL(url));
     capturedCookie = options.headers.get("cookie");
     return Response.json({
       allowed: true,
@@ -104,8 +147,11 @@ test("shared ChemVault cookie remains a fallback and is forwarded to access chec
   });
 
   assert.equal(decision.kind, "allowed");
-  assert.equal(capturedUrl.pathname, "/api/access/check");
-  assert.equal(capturedUrl.searchParams.get("permission"), REQUIRED_PERMISSION);
+  assert.deepEqual(
+    capturedUrls.map((url) => url.searchParams.get("permission")),
+    [REQUIRED_PERMISSION, FULL_ACCESS_PERMISSION],
+  );
+  assert.equal(capturedUrls[0].pathname, "/api/access/check");
   assert.equal(capturedCookie, `chemvault_session=${sharedSession}`);
 });
 

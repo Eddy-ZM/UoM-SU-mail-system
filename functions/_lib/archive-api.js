@@ -10,7 +10,9 @@ export function archiveAccessError(decision, request, env) {
   if (decision.kind === "unauthenticated") {
     return jsonResponse({ error: "authentication_required", loginUrl: buildHandoffStartUrl(request, env) }, 401);
   }
-  if (decision.kind === "forbidden") return jsonResponse({ error: "permission_denied" }, 403);
+  if (decision.kind === "forbidden" || decision.kind === "restricted") {
+    return jsonResponse({ error: "permission_denied" }, 403);
+  }
   return jsonResponse({ error: "authentication_unavailable" }, 503);
 }
 

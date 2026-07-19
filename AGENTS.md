@@ -8,8 +8,9 @@ When implementing from a selected generated mock, treat that image as the source
 
 ## Pre-approval access restriction
 
-- Until approval is obtained from the University of Manchester Department of Chemistry and the relevant departments, users denied `service:uom-su-mail-system:access` must receive the English full-screen restriction notice instead of the main service.
-- `ziwen.mu@chemvault.science` and `test@chemvault.science` are the bootstrap allowed accounts. Deny must block archive viewing and creation; Allow enables all service features.
+- Keep service entry and in-service content access as separate permissions. `service:uom-su-mail-system:access` alone controls whether a signed-in user may enter the service; preserve its existing assignments and meaning.
+- After service entry is allowed, `feature:uom-su-mail-system:full_access` controls the principal workspace and archive features. Deny must show the English full-screen restriction notice and block archive viewing and creation; Allow enables all service features.
+- `ziwen.mu@chemvault.science` and `test@chemvault.science` are bootstrap allowed accounts for the content-access permission. An explicit deny still wins. Never copy or couple service-entry decisions into the content-access permission.
 - Public verification and privacy pages remain usable, but must present the dismissible restriction notice on entry.
 - Access notices must follow the restrained institutional-document language used by the verification and privacy pages: formal masthead, left-aligned hierarchy, explicit service-status rows, and no generic alert-card decoration.
 - Display the visible `Restricted` state in red. Use `Pre-release access` without the word `position` in public-notice footers.
