@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import universityLogo from "./assets/university-of-manchester-logo.png?inline";
 
 export function VerifyMessage() {
   const [messageNumber, setMessageNumber] = useState("");
@@ -60,18 +59,13 @@ export function VerifyMessage() {
     <main className="verify-page">
       <article className="verify-shell" inert={resultIsOpen ? true : undefined}>
         <header className="verify-masthead">
-          <a className="verify-university-brand" href="https://www.manchester.ac.uk/" aria-label="The University of Manchester website">
-            <img
-              src={universityLogo}
-              alt="The University of Manchester"
-              loading="eager"
-              decoding="sync"
-              fetchPriority="high"
-            />
-          </a>
+          <div className="verify-text-identity" aria-label="Department of Chemistry Student Representatives">
+            <span aria-hidden="true">Student representative service</span>
+            <strong>Department of Chemistry Student Representatives</strong>
+          </div>
           <div className="verify-department">
-            <span>Department of Chemistry</span>
-            <strong>Student Representatives</strong>
+            <span>Public service</span>
+            <strong>Announcement verification</strong>
           </div>
         </header>
 

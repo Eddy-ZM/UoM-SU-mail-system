@@ -20,7 +20,7 @@ The published site also contains the formal Privacy Notice used by the Mail Syst
 - Add or delete individual numbered key points and bullet-list items directly inside the preview; numbered lists renumber automatically.
 - Synchronise visual changes into the HTML source automatically.
 - Apply source-code changes back to the visual preview after a short pause.
-- Protect the official University logo, departmental identity and safety footer from deletion in both the visual builder and HTML source.
+- Protect the text-only departmental identity and safety footer from deletion in both the visual builder and HTML source.
 - Keep the student-submission privacy wording and Privacy Notice link inside the protected purple email footer.
 - Block preview refresh, copying and download after protected source is changed, with one-click restoration.
 - Switch between desktop and narrow email previews.

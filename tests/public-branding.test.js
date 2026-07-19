@@ -3,12 +3,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const verifySource = readFileSync(new URL("../src/VerifyMessage.jsx", import.meta.url), "utf8");
+const privacySource = readFileSync(new URL("../src/PrivacyNotice.jsx", import.meta.url), "utf8");
 
-test("the public verification masthead embeds and prioritises the University logo", () => {
-  assert.match(verifySource, /university-of-manchester-logo\.png\?inline/);
-  assert.match(verifySource, /src=\{universityLogo\}/);
-  assert.match(verifySource, /loading="eager"/);
-  assert.match(verifySource, /decoding="sync"/);
-  assert.match(verifySource, /fetchPriority="high"/);
-  assert.doesNotMatch(verifySource, /assets\.manchester\.ac\.uk\/logos/);
+test("public pages use the text-only department identity without a University logo", () => {
+  for (const source of [verifySource, privacySource]) {
+    assert.match(source, /Department of Chemistry Student Representatives/);
+    assert.doesNotMatch(source, /universityLogo|university-of-manchester-logo|assets\.manchester\.ac\.uk\/logos/);
+  }
 });

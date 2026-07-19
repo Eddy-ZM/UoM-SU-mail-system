@@ -10,6 +10,15 @@ test("the production email template has a complete balanced document structure",
   assert.equal(hasCompleteEmailDocumentStructure(template), true);
 });
 
+test("the protected email header uses the text-only department identity", () => {
+  const header = template.match(/<tr data-protected-section="brand-header">[\s\S]*?<\/tr>\s*<tr>/)?.[0] || "";
+  assert.match(header, /class="department-label"/);
+  assert.match(header, /Department of Chemistry<br><span[^>]*>Student Representatives<\/span>/);
+  assert.doesNotMatch(header, /<img\b/i);
+  assert.doesNotMatch(template, /assets\.manchester\.ac\.uk\/logos/);
+  assert.match(emailUtilsSource, /Department identity and message details/);
+});
+
 test("the template and newly added components use the compact 12-pixel body scale", () => {
   assert.match(template, /class="mobile-pad email-body-content"[^>]*font-size:12px; line-height:20px;/);
   assert.match(template, /class="fact-value"[^>]*font-size:12px; line-height:19px;/);

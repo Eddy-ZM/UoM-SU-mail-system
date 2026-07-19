@@ -2247,29 +2247,19 @@ button {
 
 .policy-brand {
   display: flex;
-  align-items: center;
-  gap: 22px;
+  align-items: flex-start;
+  max-width: 390px;
+  padding: 8px 0 8px 18px;
   min-width: 0;
   color: #202020;
-  text-decoration: none;
-}
-
-.policy-brand img {
-  width: 205px;
-  height: auto;
-}
-
-.policy-brand span {
-  padding-left: 22px;
-  color: #333333;
-  border-left: 1px solid #b7b7b7;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 1.5;
+  border-left: 5px solid #6b2c91;
 }
 
 .policy-brand strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 19px;
   font-weight: 700;
+  line-height: 1.25;
 }
 
 .policy-document-reference {
@@ -2558,16 +2548,16 @@ button {
   }
 
   .policy-brand {
-    gap: 0;
+    max-width: min(290px, 100%);
+    padding-left: 14px;
   }
 
-  .policy-brand img {
-    width: 155px;
-  }
-
-  .policy-brand span,
   .policy-document-reference > span {
     display: none;
+  }
+
+  .policy-brand strong {
+    font-size: 16px;
   }
 
   .policy-main {
@@ -2689,15 +2679,30 @@ button {
   border-bottom: 1px solid #d6d2d8;
 }
 
-.verify-university-brand {
-  display: inline-flex;
-  flex: 0 0 auto;
+.verify-text-identity {
+  display: flex;
+  flex: 1 1 420px;
+  flex-direction: column;
+  gap: 5px;
+  max-width: 520px;
+  padding-left: 20px;
+  border-left: 5px solid #660099;
 }
 
-.verify-university-brand img {
-  width: 230px;
-  height: auto;
-  display: block;
+.verify-text-identity span {
+  color: #660099;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.verify-text-identity strong {
+  color: #241d28;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(20px, 2.2vw, 27px);
+  line-height: 1.15;
 }
 
 .verify-department {
@@ -3112,8 +3117,9 @@ button {
     gap: 20px;
   }
 
-  .verify-university-brand img {
-    width: 205px;
+  .verify-text-identity {
+    flex-basis: auto;
+    width: min(100%, 540px);
   }
 
   .verify-department {
