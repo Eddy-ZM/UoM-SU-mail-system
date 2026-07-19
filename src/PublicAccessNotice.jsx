@@ -4,8 +4,6 @@ import {
   PUBLIC_ACCESS_RESTRICTION_TITLE,
   RESTRICTION_NOTICE_BYPASS_PARAM,
   shouldBypassRepeatedPublicNotice,
-  VERIFICATION_NOTICE_MESSAGE,
-  VERIFICATION_NOTICE_TITLE,
   WORKSPACE_PRE_RELEASE_MESSAGE,
   WORKSPACE_PRE_RELEASE_TITLE,
 } from "../shared/service-restriction.js";
@@ -32,18 +30,7 @@ const WORKSPACE_NOTICE = {
   ],
 };
 
-const VERIFICATION_NOTICE = {
-  title: VERIFICATION_NOTICE_TITLE,
-  message: VERIFICATION_NOTICE_MESSAGE,
-  status: "Public verification",
-  actionLabel: "Continue to verification",
-  rows: [
-    { label: "Announcement verification", value: "Available", tone: "available" },
-    { label: "Sign-in", value: "Not required", tone: "available" },
-  ],
-};
-
-export function PublicAccessNotice({ children, purpose = "general" }) {
+export function PublicAccessNotice({ children }) {
   const [skipNotice] = useState(() => shouldBypassRepeatedPublicNotice(window.location.search));
 
   useEffect(() => {
@@ -54,8 +41,7 @@ export function PublicAccessNotice({ children, purpose = "general" }) {
   }, [skipNotice]);
 
   if (skipNotice) return children;
-  const notice = purpose === "verification" ? VERIFICATION_NOTICE : PUBLIC_NOTICE;
-  return <ServiceNotice notice={notice}>{children}</ServiceNotice>;
+  return <ServiceNotice notice={PUBLIC_NOTICE}>{children}</ServiceNotice>;
 }
 
 export function WorkspaceAccessNotice({ children }) {

@@ -8,8 +8,6 @@ import {
   PUBLIC_ACCESS_RESTRICTION_MESSAGE,
   PUBLIC_ACCESS_RESTRICTION_TITLE,
   shouldBypassRepeatedPublicNotice,
-  VERIFICATION_NOTICE_MESSAGE,
-  VERIFICATION_NOTICE_TITLE,
   WORKSPACE_PRE_RELEASE_MESSAGE,
   WORKSPACE_PRE_RELEASE_TITLE,
 } from "../shared/service-restriction.js";
@@ -42,7 +40,7 @@ test("access verification uses only a minimal animation while the check is in pr
 
 test("both public pages keep their content and show a dismissible modal notice", () => {
   assert.match(mainSource, /<PublicAccessNotice><PrivacyNotice \/><\/PublicAccessNotice>/);
-  assert.match(mainSource, /<PublicAccessNotice purpose="verification"><VerifyMessage \/><\/PublicAccessNotice>/);
+  assert.match(mainSource, /<PublicAccessNotice><VerifyMessage \/><\/PublicAccessNotice>/);
   assert.match(publicNoticeSource, /role="dialog"/);
   assert.match(publicNoticeSource, /aria-modal="true"/);
   assert.match(publicNoticeSource, /Acknowledge and continue/);
@@ -52,16 +50,6 @@ test("both public pages keep their content and show a dismissible modal notice",
   assert.match(publicNoticeSource, />Pre-release access<\/span>/);
   assert.doesNotMatch(publicNoticeSource, /Pre-release access position/);
   assert.match(publicNoticeSource, /event\.key === "Escape"/);
-});
-
-test("the verification notice is written for students checking an announcement", () => {
-  assert.equal(VERIFICATION_NOTICE_TITLE, "Verify a student representative announcement");
-  assert.match(VERIFICATION_NOTICE_MESSAGE, /public verification service remains available/);
-  assert.match(VERIFICATION_NOTICE_MESSAGE, /Students can use the message number and verification code/);
-  assert.match(publicNoticeSource, /status: "Public verification"/);
-  assert.match(publicNoticeSource, /actionLabel: "Continue to verification"/);
-  assert.match(publicNoticeSource, /label: "Announcement verification", value: "Available"/);
-  assert.match(publicNoticeSource, /label: "Sign-in", value: "Not required"/);
 });
 
 test("allowed accounts acknowledge a full-screen pre-release notice before entering the workspace", () => {
