@@ -341,10 +341,11 @@ export function getProtectedContentIssues(html) {
   if (!brand) {
     issues.push(PROTECTED_SECTIONS[0].label);
   } else {
-    const departmentLabel = brand.querySelector(".department-label")?.textContent.replace(/\s+/g, " ").trim() || "";
+    const departmentName = brand.querySelector(".department-label .department-name")?.textContent.trim() || "";
+    const representativeName = brand.querySelector(".department-label .representative-name")?.textContent.trim() || "";
     const messageNumber = brand.querySelector('[data-message-number="true"]')?.textContent.trim() || "";
     const containsBrandImage = Boolean(brand.querySelector("img"));
-    if (containsBrandImage || departmentLabel !== "Department of Chemistry Student Representatives" || !isValidMessageNumber(messageNumber)) {
+    if (containsBrandImage || departmentName !== "Department of Chemistry" || representativeName !== "Student Representatives" || !isValidMessageNumber(messageNumber)) {
       issues.push(PROTECTED_SECTIONS[0].label);
     }
   }

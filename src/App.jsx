@@ -46,6 +46,7 @@ import {
   markVerificationCodePending,
   prepareEmailForArchive,
   setEmbeddedSha256,
+  setMessageNumber,
 } from "../shared/email-integrity.js";
 
 const FONT_FAMILIES = ["Arial", "Verdana", "Tahoma", "Georgia", "Times New Roman"];
@@ -991,9 +992,19 @@ export function App({ currentUser }) {
   };
 
   const restoreBrokenHtml = useCallback(() => {
-    const next = isUsableEmailHtml(previewHtml) && getProtectedContentIssues(previewHtml).length === 0
-      ? previewHtml
-      : ensureMessageNumber(initialTemplate, { forceNew: true }).html;
+    const restoreCandidate = (candidate) => {
+      if (!isUsableEmailHtml(candidate)) return null;
+      let restored = restoreProtectedContent(candidate, initialTemplate);
+      try {
+        restored = setMessageNumber(restored, extractMessageNumber(candidate));
+      } catch {
+        restored = ensureMessageNumber(restored).html;
+      }
+      return getProtectedContentIssues(restored).length === 0 ? restored : null;
+    };
+    const next = restoreCandidate(html)
+      || restoreCandidate(previewHtml)
+      || ensureMessageNumber(initialTemplate, { forceNew: true }).html;
     updateOrigin.current = "integrity-recovery";
     setHtml(next);
     setPreviewHtml(next);
@@ -1002,7 +1013,7 @@ export function App({ currentUser }) {
     setLayoutWarningDismissed(false);
     setSyncState("Last valid email restored");
     showNotice("The last valid email has been restored");
-  }, [previewHtml, showNotice]);
+  }, [html, previewHtml, showNotice]);
 
   const continueWithLayoutWarning = useCallback(() => {
     setLayoutWarningOpen(false);
