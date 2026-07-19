@@ -137,11 +137,11 @@ export function WorkspaceChooser({
           <div className="workspace-public__links">
             <a href="/verify/" target="_blank" rel="noreferrer">
               <span><strong>Verify an announcement</strong><small>Check a message number and verification code.</small></span>
-              <span aria-hidden="true">&nearr;</span>
+              <span aria-hidden="true">↗</span>
             </a>
             <a href="/agreement/privacy-notice/" target="_blank" rel="noreferrer">
               <span><strong>Privacy Notice</strong><small>Read the formal privacy and Microsoft 365 Forms notice.</small></span>
-              <span aria-hidden="true">&nearr;</span>
+              <span aria-hidden="true">↗</span>
             </a>
           </div>
         </section>
