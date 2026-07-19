@@ -350,6 +350,8 @@ button {
   z-index: 1000;
   display: grid;
   place-items: center;
+  overflow: auto;
+  overscroll-behavior: none;
   padding: 24px;
   background: rgba(28, 22, 31, 0.76);
   backdrop-filter: blur(6px);
@@ -359,6 +361,7 @@ button {
   width: min(720px, 100%);
   max-height: calc(100vh - 48px);
   overflow: auto;
+  overscroll-behavior: contain;
   background: #fff;
   border-top: 6px solid #660099;
   box-shadow: 0 24px 70px rgba(16, 10, 18, 0.34);

@@ -137,7 +137,10 @@ test("a revoked permission returns 403 and never serves the editor", async () =>
   assert.match(body, /\/agreement\/privacy-notice\/\?restrictionNotice=shown/);
   assert.match(body, /<form method="post" action="\/api\/access\/logout">/);
   assert.match(body, />Sign out<\/button>/);
-  assert.match(response.headers.get("content-security-policy"), /form-action 'self'/);
+  assert.match(
+    response.headers.get("content-security-policy"),
+    /form-action 'self' https:\/\/user\.chemvault\.science/,
+  );
 });
 
 test("User System failures return 503 and fail closed", async () => {

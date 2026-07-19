@@ -59,14 +59,6 @@ function ServiceNotice({ children, notice }) {
     if (!open) return undefined;
 
     const previouslyFocused = document.activeElement;
-    const previousOverflow = document.body.style.overflow;
-    const previousPaddingRight = document.body.style.paddingRight;
-    const scrollbarWidth = Math.max(0, window.innerWidth - document.documentElement.clientWidth);
-    if (scrollbarWidth > 0) {
-      const currentPaddingRight = Number.parseFloat(window.getComputedStyle(document.body).paddingRight) || 0;
-      document.body.style.paddingRight = `${currentPaddingRight + scrollbarWidth}px`;
-    }
-    document.body.style.overflow = "hidden";
     closeButtonRef.current?.focus({ preventScroll: true });
 
     const handleKeyDown = (event) => {
@@ -78,15 +70,13 @@ function ServiceNotice({ children, notice }) {
 
       if (event.key === "Tab" && dialogRef.current) {
         event.preventDefault();
-        closeButtonRef.current?.focus();
+        closeButtonRef.current?.focus({ preventScroll: true });
       }
     };
 
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-      document.body.style.paddingRight = previousPaddingRight;
       if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus({ preventScroll: true });
     };
   }, [open]);

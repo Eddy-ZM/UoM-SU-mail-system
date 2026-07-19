@@ -354,7 +354,7 @@ export function gatePageResponse(title, message, status, extraHeaders = {}) {
     status,
     headers: noStoreHeaders({
       "content-type": "text/html; charset=utf-8",
-      "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+      "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'self' https://user.chemvault.science; frame-ancestors 'none'",
       ...extraHeaders,
     }),
   });

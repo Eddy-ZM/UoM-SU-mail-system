@@ -15,6 +15,7 @@ import {
 const accessGateSource = readFileSync(new URL("../src/AccessGate.jsx", import.meta.url), "utf8");
 const mainSource = readFileSync(new URL("../src/main.jsx", import.meta.url), "utf8");
 const publicNoticeSource = readFileSync(new URL("../src/PublicAccessNotice.jsx", import.meta.url), "utf8");
+const stylesSource = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 
 test("restricted access copy explains the pending University approval", () => {
   assert.equal(ACCESS_RESTRICTION_TITLE, "Limited pre-release access");
@@ -52,11 +53,11 @@ test("both public pages keep their content and show a dismissible modal notice",
   assert.match(publicNoticeSource, /event\.key === "Escape"/);
 });
 
-test("notice scroll locking keeps the background layout fixed", () => {
-  assert.match(publicNoticeSource, /window\.innerWidth - document\.documentElement\.clientWidth/);
-  assert.match(publicNoticeSource, /document\.body\.style\.paddingRight = `\$\{currentPaddingRight \+ scrollbarWidth\}px`/);
-  assert.match(publicNoticeSource, /document\.body\.style\.paddingRight = previousPaddingRight/);
+test("notice keeps the background geometry unchanged while it is open", () => {
+  assert.doesNotMatch(publicNoticeSource, /document\.body\.style\.(?:overflow|paddingRight)/);
   assert.match(publicNoticeSource, /focus\(\{ preventScroll: true \}\)/);
+  assert.match(stylesSource, /\.public-restriction-backdrop\s*\{[^}]*overflow: auto;[^}]*overscroll-behavior: none;/s);
+  assert.match(stylesSource, /\.public-restriction-dialog\s*\{[^}]*overscroll-behavior: contain;/s);
 });
 
 test("allowed accounts acknowledge a full-screen pre-release notice before entering the workspace", () => {
