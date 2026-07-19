@@ -121,14 +121,14 @@ test("public verification returns the same generic invalid result for wrong or m
   assert.deepEqual(await verifyArchivedMessage(missingDb, "CHEM-SR-89ABCDEF", "1234-ABCD-5678-EF90"), { valid: false });
 });
 
-test("only ziwen.mu@chemvault.science can delete an archive", async () => {
+test("any verified user with full service access can delete an archive", async () => {
   const db = recordingDb();
   await assert.rejects(
-    () => deleteArchive(db, "archive-1", { email: "other@chemvault.science" }),
+    () => deleteArchive(db, "archive-1", { email: "unverified@chemvault.science" }),
     (error) => error.status === 403,
   );
   assert.equal(db.calls.length, 0);
 
-  assert.equal(await deleteArchive(db, "archive-1", { email: "ZIWEN.MU@CHEMVAULT.SCIENCE" }), true);
+  assert.equal(await deleteArchive(db, "archive-1", { id: "user-test", email: "TEST@CHEMVAULT.SCIENCE" }), true);
   assert.match(db.calls[0].sql, /DELETE FROM email_archives/);
 });

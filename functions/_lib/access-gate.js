@@ -243,6 +243,22 @@ export function jsonResponse(payload, status = 200, extraHeaders = {}) {
 export function gatePageResponse(title, message, status, extraHeaders = {}) {
   const safeTitle = escapeHtml(title);
   const safeMessage = escapeHtml(message);
+  const isRestricted = Number(status) === 403;
+  const statusLabel = isRestricted ? "Pre-release access" : "Secure access check";
+  const serviceLabel = isRestricted ? "Limited access" : "Identity verification";
+  const position = isRestricted
+    ? `<section class="position" aria-label="Current access position">
+          <h2>Current access position</h2>
+          <dl>
+            <div><dt>Main workspace</dt><dd class="restricted">Restricted</dd></div>
+            <div><dt>Archive services</dt><dd>Viewing and creation unavailable</dd></div>
+            <div><dt>Public verification</dt><dd class="available">Available</dd></div>
+          </dl>
+        </section>`
+    : `<aside class="advisory">Access will remain closed until your account and permission can be verified securely.</aside>`;
+  const primaryAction = isRestricted
+    ? `<a class="primary" href="/verify/">Open public verification</a>`
+    : `<a class="primary" href="/">Try access again</a>`;
   const body = `<!doctype html>
 <html lang="en">
   <head>
@@ -250,23 +266,75 @@ export function gatePageResponse(title, message, status, extraHeaders = {}) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>${safeTitle} | Manchester Chemistry Representative Mail Studio</title>
     <style>
-      :root { color: #211827; background: #e9ebf1; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      :root { color: #262028; background: #e8e8ed; font-family: Arial, Helvetica, sans-serif; }
       * { box-sizing: border-box; }
-      body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: 24px; background: #e9ebf1; }
-      main { width: min(540px, 100%); background: #fff; border-top: 5px solid #660099; box-shadow: 0 18px 46px rgba(43,37,48,.16); padding: 36px; }
-      .kicker { color: #660099; font-size: 12px; font-weight: 800; letter-spacing: 1.6px; text-transform: uppercase; }
-      h1 { margin: 10px 0 12px; color: #2b2530; font-size: clamp(28px, 5vw, 38px); line-height: 1.08; }
-      p { margin: 0; color: #574f5b; font-size: 16px; line-height: 1.65; }
-      a { display: inline-block; margin-top: 24px; color: #fff; background: #660099; padding: 12px 18px; border-radius: 4px; font-weight: 750; text-decoration: none; }
+      body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: clamp(22px,5vw,64px); background: #e8e8ed; }
+      main { width: min(920px,100%); overflow: hidden; background: #fff; border-top: 6px solid #660099; box-shadow: 0 22px 52px rgba(32,27,36,.14); }
+      .masthead { min-height: 126px; display: flex; align-items: center; justify-content: space-between; gap: 36px; padding: 20px clamp(28px,5vw,52px); border-bottom: 1px solid #d6d2d8; }
+      .identity { display: flex; flex: 1 1 420px; flex-direction: column; gap: 5px; max-width: 520px; padding-left: 20px; border-left: 5px solid #660099; }
+      .identity span, .status span { color: #660099; font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; }
+      .identity strong { color: #241d28; font-family: Georgia,"Times New Roman",serif; font-size: clamp(20px,2.2vw,27px); line-height: 1.15; }
+      .status { display: flex; flex-direction: column; gap: 5px; padding-left: 28px; text-align: right; border-left: 1px solid #c9c3cc; }
+      .status span { color: #5f5663; letter-spacing: .35px; }
+      .status strong { color: #2c2630; font-size: 17px; }
+      .service-strip { min-height: 42px; display: flex; align-items: center; justify-content: space-between; gap: 22px; padding: 9px clamp(28px,5vw,52px); color: #fff; background: #2b2530; border-bottom: 4px solid #660099; font-size: 11px; }
+      .service-strip strong { color: #ffcc33; font-size: 10px; letter-spacing: 1.1px; text-transform: uppercase; }
+      .body { padding: clamp(42px,6vw,64px) clamp(28px,6vw,64px) clamp(38px,5vw,54px); }
+      .kicker { margin: 0 0 14px; color: #660099; font-size: 10px; font-weight: 850; letter-spacing: 1.5px; text-transform: uppercase; }
+      h1 { max-width: 700px; margin: 0; color: #241f26; font-size: clamp(36px,5.5vw,56px); font-weight: 650; line-height: 1.03; letter-spacing: -1.7px; }
+      .lead { max-width: 700px; margin: 21px 0 0; color: #5f5663; font-size: 15px; line-height: 1.72; }
+      .position { margin-top: 34px; border-top: 1px solid #cfc9d2; }
+      .position h2 { margin: 0; padding: 15px 0 10px; color: #373039; font-size: 12px; }
+      dl { margin: 0; }
+      dl div { display: grid; grid-template-columns: minmax(180px,.8fr) minmax(0,1.2fr); gap: 24px; padding: 12px 0; border-top: 1px solid #ddd8df; }
+      dt, dd { margin: 0; font-size: 12px; line-height: 1.5; }
+      dt { color: #6f6673; font-weight: 700; }
+      dd { color: #433a46; font-weight: 800; }
+      dd.restricted { color: #b42318; }
+      dd.available { color: #287050; }
+      .advisory { max-width: 700px; margin-top: 30px; padding: 16px 18px; color: #4c444f; background: #f4f2f5; border-left: 4px solid #660099; font-size: 13px; line-height: 1.6; }
+      .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
+      .actions a { min-height: 46px; padding: 0 17px; color: #660099; background: #fff; border: 1px solid #9b8fa0; border-radius: 2px; font-size: 12px; font-weight: 800; line-height: 44px; text-decoration: none; }
+      .actions a.primary { color: #fff; background: #660099; border-color: #660099; }
+      .footer { display: flex; align-items: center; justify-content: space-between; gap: 28px; padding: 21px clamp(28px,5vw,52px); color: #d8d0dc; background: #211b24; border-top: 4px solid #660099; font-size: 10px; }
+      .footer div { display: flex; flex-direction: column; gap: 2px; }
+      .footer strong { color: #fff; }
+      .footer a { color: #ffcc33; font-weight: 750; text-underline-offset: 2px; }
       a:focus-visible { outline: 3px solid #ffcc33; outline-offset: 3px; }
+      @media (max-width: 620px) {
+        body { display: block; padding: 0; }
+        main { width: 100%; min-height: 100vh; box-shadow: none; }
+        .masthead { min-height: 0; align-items: flex-start; flex-direction: column; gap: 18px; }
+        .identity { flex-basis: auto; }
+        .status { padding: 0; text-align: left; border-left: 0; }
+        .service-strip, .footer { align-items: flex-start; flex-direction: column; gap: 5px; }
+        dl div { grid-template-columns: 1fr; gap: 3px; }
+        .actions { display: grid; }
+        .actions a { width: 100%; text-align: center; }
+      }
     </style>
   </head>
   <body>
     <main>
-      <div class="kicker">The University of Manchester</div>
-      <h1>${safeTitle}</h1>
-      <p>${safeMessage}</p>
-      <a href="https://user.chemvault.science/">Open ChemVault User System</a>
+      <header class="masthead">
+        <div class="identity"><span>Student representative service</span><strong>Department of Chemistry Student Representatives</strong></div>
+        <div class="status"><span>Service status</span><strong>${statusLabel}</strong></div>
+      </header>
+      <div class="service-strip"><span>Manchester Chemistry Representative Mail Studio</span><strong>${serviceLabel}</strong></div>
+      <div class="body">
+        <p class="kicker">${isRestricted ? "Pre-release service notice" : "Secure access check"}</p>
+        <h1>${safeTitle}</h1>
+        <p class="lead">${safeMessage}</p>
+        ${position}
+        <div class="actions">
+          ${primaryAction}
+          <a href="https://user.chemvault.science/">Review account access</a>
+        </div>
+      </div>
+      <footer class="footer">
+        <div><strong>Manchester Chemistry Representative Mail Studio</strong><span>Student representative communications service</span></div>
+        <a href="/agreement/privacy-notice/">Privacy notice</a>
+      </footer>
     </main>
   </body>
 </html>`;

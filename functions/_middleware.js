@@ -10,6 +10,10 @@ import {
   readHandoffCallbackToken,
   verifyHandoffAccess,
 } from "./_lib/access-gate.js";
+import {
+  ACCESS_RESTRICTION_MESSAGE,
+  ACCESS_RESTRICTION_TITLE,
+} from "../shared/service-restriction.js";
 
 const STATUS_PATH = "/api/access/status";
 
@@ -43,8 +47,8 @@ export async function onRequest(context) {
     }
     if (callbackDecision.kind === "forbidden") {
       return gatePageResponse(
-        "Access denied",
-        "ChemVault User System rejected this sign-in handoff. Please sign in again or contact a User System administrator.",
+        ACCESS_RESTRICTION_TITLE,
+        ACCESS_RESTRICTION_MESSAGE,
         403,
         { "set-cookie": clearHandoffCookie() },
       );
@@ -69,8 +73,8 @@ export async function onRequest(context) {
 
   if (decision.kind === "forbidden") {
     return gatePageResponse(
-      "Access denied",
-      "Your ChemVault account is signed in, but it does not have permission to use this mail editor. Please contact a User System administrator.",
+      ACCESS_RESTRICTION_TITLE,
+      ACCESS_RESTRICTION_MESSAGE,
       403,
     );
   }

@@ -2,6 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { onRequest } from "../functions/_middleware.js";
 import { HANDOFF_COOKIE_NAME } from "../functions/_lib/access-gate.js";
+import {
+  ACCESS_RESTRICTION_MESSAGE,
+  ACCESS_RESTRICTION_TITLE,
+} from "../shared/service-restriction.js";
 
 const handoffToken = "header.payload.middleware-signature";
 const originalFetch = globalThis.fetch;
@@ -126,7 +130,9 @@ test("a revoked permission returns 403 and never serves the editor", async () =>
   });
 
   assert.equal(response.status, 403);
-  assert.match(await response.text(), /Access denied/);
+  const body = await response.text();
+  assert.match(body, new RegExp(ACCESS_RESTRICTION_TITLE));
+  assert.match(body, new RegExp(ACCESS_RESTRICTION_MESSAGE.replaceAll("'", "&#039;")));
 });
 
 test("User System failures return 503 and fail closed", async () => {

@@ -11,7 +11,6 @@ import {
 } from "../../shared/email-integrity.js";
 import { archiveReopenWindow } from "../../shared/archive-reopen.js";
 
-export const ARCHIVE_OWNER_EMAIL = "ziwen.mu@chemvault.science";
 export const ARCHIVE_OPERATIONS = Object.freeze(["copy_html", "copy_outlook", "download_html"]);
 
 const MAX_HTML_BYTES = 2_000_000;
@@ -46,7 +45,8 @@ function normalizedUser(user) {
 }
 
 export function canDeleteArchives(user) {
-  return String(user?.email || "").trim().toLowerCase() === ARCHIVE_OWNER_EMAIL;
+  return typeof user?.id === "string" && Boolean(user.id.trim())
+    && typeof user?.email === "string" && Boolean(user.email.trim());
 }
 
 export async function createArchive(db, payload, verifiedUser, options = {}) {
@@ -213,7 +213,9 @@ export async function getArchive(db, archiveId, options = {}) {
 }
 
 export async function deleteArchive(db, archiveId, verifiedUser) {
-  if (!canDeleteArchives(verifiedUser)) throw new ArchiveValidationError("Only the archive owner may delete backups.", 403);
+  if (!canDeleteArchives(verifiedUser)) {
+    throw new ArchiveValidationError("A verified user with full service access is required to delete archives.", 403);
+  }
   if (!db?.prepare) throw new ArchiveValidationError("Archive database is unavailable.", 503);
   const result = await db.prepare("DELETE FROM email_archives WHERE id = ?").bind(archiveId).run();
   return Number(result.meta?.changes || 0) > 0;

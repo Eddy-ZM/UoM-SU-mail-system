@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { AccessGate } from "./AccessGate.jsx";
 import { App } from "./App.jsx";
 import { PrivacyNotice } from "./PrivacyNotice.jsx";
+import { PublicAccessNotice } from "./PublicAccessNotice.jsx";
 import { VerifyMessage } from "./VerifyMessage.jsx";
 import "./styles.css";
 
@@ -13,9 +14,9 @@ const isVerificationPage = path === "/verify";
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     {isPrivacyNotice
-      ? <PrivacyNotice />
+      ? <PublicAccessNotice><PrivacyNotice /></PublicAccessNotice>
       : isVerificationPage
-        ? <VerifyMessage />
+        ? <PublicAccessNotice><VerifyMessage /></PublicAccessNotice>
         : <AccessGate>{(currentUser) => <App currentUser={currentUser} />}</AccessGate>}
   </React.StrictMode>,
 );
