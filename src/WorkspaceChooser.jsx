@@ -128,6 +128,23 @@ export function WorkspaceChooser({
             </span>
           </button>
         </div>
+
+        <section className="workspace-public" aria-labelledby="workspace-public-title">
+          <div className="workspace-public__heading">
+            <span id="workspace-public-title">Public resources</span>
+            <p>Open the public verification service or read how information is handled.</p>
+          </div>
+          <div className="workspace-public__links">
+            <a href="/verify/" target="_blank" rel="noreferrer">
+              <span><strong>Verify an announcement</strong><small>Check a message number and verification code.</small></span>
+              <span aria-hidden="true">&nearr;</span>
+            </a>
+            <a href="/agreement/privacy-notice/" target="_blank" rel="noreferrer">
+              <span><strong>Privacy Notice</strong><small>Read the formal privacy and Microsoft 365 Forms notice.</small></span>
+              <span aria-hidden="true">&nearr;</span>
+            </a>
+          </div>
+        </section>
       </section>
 
       <WorkspaceFooter />
