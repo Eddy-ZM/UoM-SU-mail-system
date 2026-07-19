@@ -1,3 +1,5 @@
+import { publicPathFromRestriction } from "../../shared/service-restriction.js";
+
 export const REQUIRED_PERMISSION = "service:uom-su-mail-system:access";
 export const HANDOFF_AUDIENCE = "uom-su-mail-system";
 export const HANDOFF_COOKIE_NAME = "__Host-uom_su_mail_handoff";
@@ -257,8 +259,14 @@ export function gatePageResponse(title, message, status, extraHeaders = {}) {
         </section>`
     : `<aside class="advisory">Access will remain closed until your account and permission can be verified securely.</aside>`;
   const primaryAction = isRestricted
-    ? `<a class="primary" href="/verify/">Open public verification</a>`
+    ? `<a class="primary" href="${publicPathFromRestriction("/verify/")}">Open public verification</a>`
     : `<a class="primary" href="/">Try access again</a>`;
+  const privacyHref = isRestricted
+    ? publicPathFromRestriction("/agreement/privacy-notice/")
+    : "/agreement/privacy-notice/";
+  const signOutAction = isRestricted
+    ? `<form method="post" action="/api/access/logout"><button type="submit">Sign out</button></form>`
+    : "";
   const body = `<!doctype html>
 <html lang="en">
   <head>
@@ -294,7 +302,9 @@ export function gatePageResponse(title, message, status, extraHeaders = {}) {
       dd.available { color: #287050; }
       .advisory { max-width: 700px; margin-top: 30px; padding: 16px 18px; color: #4c444f; background: #f4f2f5; border-left: 4px solid #660099; font-size: 13px; line-height: 1.6; }
       .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
-      .actions a { min-height: 46px; padding: 0 17px; color: #660099; background: #fff; border: 1px solid #9b8fa0; border-radius: 2px; font-size: 12px; font-weight: 800; line-height: 44px; text-decoration: none; }
+      .actions form { margin: 0; }
+      .actions a, .actions button { min-height: 46px; padding: 0 17px; color: #660099; background: #fff; border: 1px solid #9b8fa0; border-radius: 2px; font: 800 12px/44px Arial,Helvetica,sans-serif; text-decoration: none; }
+      .actions button { cursor: pointer; }
       .actions a.primary { color: #fff; background: #660099; border-color: #660099; }
       .footer { display: flex; align-items: center; justify-content: space-between; gap: 28px; padding: 21px clamp(28px,5vw,52px); color: #d8d0dc; background: #211b24; border-top: 4px solid #660099; font-size: 10px; }
       .footer div { display: flex; flex-direction: column; gap: 2px; }
@@ -310,7 +320,7 @@ export function gatePageResponse(title, message, status, extraHeaders = {}) {
         .service-strip, .footer { align-items: flex-start; flex-direction: column; gap: 5px; }
         dl div { grid-template-columns: 1fr; gap: 3px; }
         .actions { display: grid; }
-        .actions a { width: 100%; text-align: center; }
+        .actions a, .actions form, .actions button { width: 100%; text-align: center; }
       }
     </style>
   </head>
@@ -329,11 +339,12 @@ export function gatePageResponse(title, message, status, extraHeaders = {}) {
         <div class="actions">
           ${primaryAction}
           <a href="https://user.chemvault.science/">Review account access</a>
+          ${signOutAction}
         </div>
       </div>
       <footer class="footer">
         <div><strong>Manchester Chemistry Representative Mail Studio</strong><span>Student representative communications service</span></div>
-        <a href="/agreement/privacy-notice/">Privacy notice</a>
+        <a href="${privacyHref}">Privacy notice</a>
       </footer>
     </main>
   </body>
@@ -343,7 +354,7 @@ export function gatePageResponse(title, message, status, extraHeaders = {}) {
     status,
     headers: noStoreHeaders({
       "content-type": "text/html; charset=utf-8",
-      "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+      "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
       ...extraHeaders,
     }),
   });

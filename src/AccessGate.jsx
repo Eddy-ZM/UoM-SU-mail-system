@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ACCESS_RESTRICTION_MESSAGE,
   ACCESS_RESTRICTION_TITLE,
+  publicPathFromRestriction,
 } from "../shared/service-restriction.js";
 
 const INITIAL_STATE = { status: "checking", loginUrl: null, user: null };
@@ -133,9 +134,16 @@ export function AccessGate({ children }) {
           )}
 
           <div className="access-gate-actions">
-            {isForbidden && <a className="is-primary" href="/verify/">Open public verification</a>}
+            {isForbidden && (
+              <a className="is-primary" href={publicPathFromRestriction("/verify/")}>Open public verification</a>
+            )}
             <button type="button" onClick={verifyAccess}>Check access again</button>
             <a href="https://user.chemvault.science/">Review account access</a>
+            {isForbidden && (
+              <form method="post" action="/api/access/logout">
+                <button type="submit">Sign out</button>
+              </form>
+            )}
           </div>
         </div>
 
@@ -144,7 +152,12 @@ export function AccessGate({ children }) {
             <strong>Manchester Chemistry Representative Mail Studio</strong>
             <span>Student representative communications service</span>
           </div>
-          <a href="/agreement/privacy-notice/">Privacy notice</a>
+          <a href={isForbidden
+            ? publicPathFromRestriction("/agreement/privacy-notice/")
+            : "/agreement/privacy-notice/"}
+          >
+            Privacy notice
+          </a>
         </footer>
       </section>
     </main>

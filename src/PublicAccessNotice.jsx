@@ -1,13 +1,59 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   PUBLIC_ACCESS_RESTRICTION_MESSAGE,
   PUBLIC_ACCESS_RESTRICTION_TITLE,
+  RESTRICTION_NOTICE_BYPASS_PARAM,
+  shouldBypassRepeatedPublicNotice,
+  WORKSPACE_PRE_RELEASE_MESSAGE,
+  WORKSPACE_PRE_RELEASE_TITLE,
 } from "../shared/service-restriction.js";
 
+const PUBLIC_NOTICE = {
+  title: PUBLIC_ACCESS_RESTRICTION_TITLE,
+  message: PUBLIC_ACCESS_RESTRICTION_MESSAGE,
+  status: "Pre-release",
+  actionLabel: "Acknowledge and continue",
+  rows: [
+    { label: "Main workspace and archives", value: "Restricted", tone: "restricted" },
+    { label: "This public page", value: "Available", tone: "available" },
+  ],
+};
+
+const WORKSPACE_NOTICE = {
+  title: WORKSPACE_PRE_RELEASE_TITLE,
+  message: WORKSPACE_PRE_RELEASE_MESSAGE,
+  status: "Authorised access",
+  actionLabel: "Acknowledge and enter workspace",
+  rows: [
+    { label: "Full workspace", value: "Available", tone: "available" },
+    { label: "Archive services", value: "Viewing and creation available", tone: "available" },
+  ],
+};
+
 export function PublicAccessNotice({ children }) {
+  const [skipNotice] = useState(() => shouldBypassRepeatedPublicNotice(window.location.search));
+
+  useEffect(() => {
+    if (!skipNotice) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete(RESTRICTION_NOTICE_BYPASS_PARAM);
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+  }, [skipNotice]);
+
+  if (skipNotice) return children;
+  return <ServiceNotice notice={PUBLIC_NOTICE}>{children}</ServiceNotice>;
+}
+
+export function WorkspaceAccessNotice({ children }) {
+  return <ServiceNotice notice={WORKSPACE_NOTICE}>{children}</ServiceNotice>;
+}
+
+function ServiceNotice({ children, notice }) {
   const [open, setOpen] = useState(true);
   const dialogRef = useRef(null);
   const closeButtonRef = useRef(null);
+  const titleId = useId();
+  const messageId = useId();
 
   useEffect(() => {
     if (!open) return undefined;
@@ -53,8 +99,8 @@ export function PublicAccessNotice({ children }) {
             className="public-restriction-dialog"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="public-restriction-title"
-            aria-describedby="public-restriction-message"
+            aria-labelledby={titleId}
+            aria-describedby={messageId}
           >
             <header className="public-restriction-masthead">
               <div className="public-restriction-identity">
@@ -63,30 +109,26 @@ export function PublicAccessNotice({ children }) {
               </div>
               <div className="public-restriction-status">
                 <span>Service status</span>
-                <strong>Pre-release</strong>
+                <strong>{notice.status}</strong>
               </div>
             </header>
 
             <div className="public-restriction-body">
               <p className="public-restriction-kicker">Pre-release service notice</p>
-              <h2 id="public-restriction-title">{PUBLIC_ACCESS_RESTRICTION_TITLE}</h2>
-              <p id="public-restriction-message" className="public-restriction-lead">
-                {PUBLIC_ACCESS_RESTRICTION_MESSAGE}
-              </p>
+              <h2 id={titleId}>{notice.title}</h2>
+              <p id={messageId} className="public-restriction-lead">{notice.message}</p>
 
-              <dl className="public-restriction-position" aria-label="Current service position">
-                <div>
-                  <dt>Main workspace and archives</dt>
-                  <dd className="is-restricted">Restricted</dd>
-                </div>
-                <div>
-                  <dt>This public page</dt>
-                  <dd>Available</dd>
-                </div>
+              <dl className="public-restriction-position" aria-label="Current service access">
+                {notice.rows.map((row) => (
+                  <div key={row.label}>
+                    <dt>{row.label}</dt>
+                    <dd className={`is-${row.tone}`}>{row.value}</dd>
+                  </div>
+                ))}
               </dl>
 
               <button ref={closeButtonRef} type="button" onClick={() => setOpen(false)}>
-                Acknowledge and continue
+                {notice.actionLabel}
               </button>
             </div>
 

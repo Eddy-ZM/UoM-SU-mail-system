@@ -14,3 +14,6 @@ When implementing from a selected generated mock, treat that image as the source
 - Access notices must follow the restrained institutional-document language used by the verification and privacy pages: formal masthead, left-aligned hierarchy, explicit service-status rows, and no generic alert-card decoration.
 - Display the visible `Restricted` state in red. Use `Pre-release access` without the word `position` in public-notice footers.
 - During the brief permission check or login redirect, show only the verification animation. Do not flash the institutional masthead, explanatory copy, footer, or privacy link before the final access state is known.
+- After an allowed account enters the main workspace, show a dismissible full-screen pre-release notice before exposing the workspace. State clearly that the account retains full workspace and archive access while formal approval is pending.
+- When a restricted user follows a public-page link from the full-screen restriction notice, suppress the otherwise repeated public notice for that navigation and immediately remove the one-time marker from the URL.
+- Restricted users must always have a visible `Sign out` action on both the server-rendered and React restriction pages. It must use the existing POST logout flow and clear the local handoff before redirecting through User System logout.

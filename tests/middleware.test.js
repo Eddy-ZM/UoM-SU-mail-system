@@ -133,6 +133,11 @@ test("a revoked permission returns 403 and never serves the editor", async () =>
   const body = await response.text();
   assert.match(body, new RegExp(ACCESS_RESTRICTION_TITLE));
   assert.match(body, new RegExp(ACCESS_RESTRICTION_MESSAGE.replaceAll("'", "&#039;")));
+  assert.match(body, /\/verify\/\?restrictionNotice=shown/);
+  assert.match(body, /\/agreement\/privacy-notice\/\?restrictionNotice=shown/);
+  assert.match(body, /<form method="post" action="\/api\/access\/logout">/);
+  assert.match(body, />Sign out<\/button>/);
+  assert.match(response.headers.get("content-security-policy"), /form-action 'self'/);
 });
 
 test("User System failures return 503 and fail closed", async () => {
