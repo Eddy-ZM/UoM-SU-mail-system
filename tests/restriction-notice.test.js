@@ -52,6 +52,13 @@ test("both public pages keep their content and show a dismissible modal notice",
   assert.match(publicNoticeSource, /event\.key === "Escape"/);
 });
 
+test("notice scroll locking keeps the background layout fixed", () => {
+  assert.match(publicNoticeSource, /window\.innerWidth - document\.documentElement\.clientWidth/);
+  assert.match(publicNoticeSource, /document\.body\.style\.paddingRight = `\$\{currentPaddingRight \+ scrollbarWidth\}px`/);
+  assert.match(publicNoticeSource, /document\.body\.style\.paddingRight = previousPaddingRight/);
+  assert.match(publicNoticeSource, /focus\(\{ preventScroll: true \}\)/);
+});
+
 test("allowed accounts acknowledge a full-screen pre-release notice before entering the workspace", () => {
   assert.equal(WORKSPACE_PRE_RELEASE_TITLE, "Authorised pre-release access");
   assert.match(WORKSPACE_PRE_RELEASE_MESSAGE, /awaiting approval/);
