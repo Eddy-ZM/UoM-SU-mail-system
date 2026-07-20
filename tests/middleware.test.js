@@ -64,6 +64,19 @@ test("public verification page and API bypass the editor authentication redirect
   }
 });
 
+test("public issue reporting page and submit API bypass the editor authentication redirect", async () => {
+  for (const path of ["/report/", "/api/reports"]) {
+    let nextCalls = 0;
+    const response = await onRequest({
+      request: new Request(`https://uom-su-mail-system.pages.dev${path}`, { method: path.startsWith("/api/") ? "POST" : "GET" }),
+      env: {},
+      next: async () => { nextCalls += 1; return new Response("public reporting"); },
+    });
+    assert.equal(nextCalls, 1);
+    assert.equal(await response.text(), "public reporting");
+  }
+});
+
 test("an editor request without a local session redirects to User System handoff", async () => {
   const response = await onRequest({
     request: new Request("https://mailsys.uomsu.chemvault.science/?preset=event"),

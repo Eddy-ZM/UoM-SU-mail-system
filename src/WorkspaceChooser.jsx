@@ -132,9 +132,13 @@ export function WorkspaceChooser({
         <section className="workspace-public" aria-labelledby="workspace-public-title">
           <div className="workspace-public__heading">
             <span id="workspace-public-title">Public resources</span>
-            <p>Open the public verification service or read how information is handled.</p>
+            <p>Report an issue, verify an announcement or read how information is handled.</p>
           </div>
           <div className="workspace-public__links">
+            <a href="/report/" target="_blank" rel="noreferrer">
+              <span><strong>Report a student issue</strong><small>Share a concern anonymously or request follow-up.</small></span>
+              <span aria-hidden="true">↗</span>
+            </a>
             <a href="/verify/" target="_blank" rel="noreferrer">
               <span><strong>Verify an announcement</strong><small>Check a message number and verification code.</small></span>
               <span aria-hidden="true">↗</span>

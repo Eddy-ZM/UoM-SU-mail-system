@@ -22,6 +22,7 @@ export function isPublicRequestPath(pathname) {
   if (pathname.startsWith("/.well-known/")) return true;
   if (pathname === "/agreement/privacy-notice" || pathname === "/agreement/privacy-notice/") return true;
   if (pathname === "/verify" || pathname === "/verify/" || pathname === "/api/verification") return true;
+  if (pathname === "/report" || pathname === "/report/" || pathname === "/api/reports") return true;
   if (pathname === "/api/access/logout") return true;
   if (pathname.startsWith("/assets/")) return true;
   return pathname === "/favicon.ico" || pathname === "/robots.txt" || pathname === "/site.webmanifest";
@@ -334,6 +335,7 @@ export function gatePageResponse(title, message, status, extraHeaders = {}, opti
             <div><dt>Main workspace</dt><dd class="restricted">Restricted</dd></div>
             <div><dt>Archive services</dt><dd>Viewing and creation unavailable</dd></div>
             <div><dt>Public verification</dt><dd class="available">Available</dd></div>
+            <div><dt>Student issue reporting</dt><dd class="available">Available</dd></div>
           </dl>
         </section>`
     : `<aside class="advisory">${isDenied
@@ -345,6 +347,7 @@ export function gatePageResponse(title, message, status, extraHeaders = {}, opti
   const privacyHref = isRestricted
     ? publicPathFromRestriction("/agreement/privacy-notice/")
     : "/agreement/privacy-notice/";
+  const reportHref = isRestricted ? publicPathFromRestriction("/report/") : "/report/";
   const signOutAction = isDenied
     ? `<form method="post" action="/api/access/logout"><button type="submit">Sign out</button></form>`
     : "";
@@ -419,6 +422,7 @@ export function gatePageResponse(title, message, status, extraHeaders = {}, opti
         ${position}
         <div class="actions">
           ${primaryAction}
+          ${isRestricted ? `<a href="${reportHref}">Report a student issue</a>` : ""}
           <a href="https://user.chemvault.science/">Review account access</a>
           ${signOutAction}
         </div>

@@ -140,6 +140,7 @@ export function VerifyMessage() {
             <span>Department of Chemistry &middot; Student Representatives Team</span>
           </div>
           <nav aria-label="Verification service information">
+            <a href="/report/">Report an issue</a>
             <a href="/agreement/privacy-notice/">Privacy Notice</a>
             <a href="mailto:rongzhi.wu@student.manchester.ac.uk">Contact the team</a>
           </nav>

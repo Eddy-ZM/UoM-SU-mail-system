@@ -348,7 +348,7 @@
 
 .workspace-public__links {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -386,12 +386,10 @@
 
 .workspace-public__links small {
   margin-top: 3px;
-  overflow: hidden;
   color: #746a77;
   font-size: 10px;
   line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .workspace-public__links a > span:last-child {

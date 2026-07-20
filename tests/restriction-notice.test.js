@@ -39,9 +39,10 @@ test("access verification uses only a minimal animation while the check is in pr
   assert.doesNotMatch(accessGateSource, /Redirecting to sign in/);
 });
 
-test("both public pages keep their content and show a dismissible modal notice", () => {
+test("all public pages keep their content and show a dismissible modal notice", () => {
   assert.match(mainSource, /<PublicAccessNotice><PrivacyNotice \/><\/PublicAccessNotice>/);
   assert.match(mainSource, /<PublicAccessNotice><VerifyMessage \/><\/PublicAccessNotice>/);
+  assert.match(mainSource, /<PublicAccessNotice><ReportIssue \/><\/PublicAccessNotice>/);
   assert.match(publicNoticeSource, /role="dialog"/);
   assert.match(publicNoticeSource, /aria-modal="true"/);
   assert.match(publicNoticeSource, /Acknowledge and continue/);
