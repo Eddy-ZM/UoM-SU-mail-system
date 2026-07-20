@@ -186,6 +186,7 @@ export function ArchiveProgress({ user, onLogout, isLoggingOut = false }) {
 export function ArchivedSession({
   user,
   receipt,
+  onCopyOutlook,
   onCreateEmail,
   onOpenArchived,
   onSearchArchive,
@@ -193,20 +194,31 @@ export function ArchivedSession({
   onLogout,
   isLoggingOut = false,
 }) {
+  const outlookCopyReady = receipt.operation === "copy_outlook" && typeof onCopyOutlook === "function";
+
   return (
     <main className="workspace-chooser archive-session">
       <WorkspaceHeader user={user} onLogout={onLogout} isLoggingOut={isLoggingOut} />
       <section className="archive-session__content" aria-labelledby="archive-session-title">
         <p className="archive-session__eyebrow">Immutable backup created</p>
-        <h1 id="archive-session-title">Email archived. Editor closed.</h1>
-        <p>This email cannot be edited again. Authorised team members can reopen its read-only copy and repeat copy or download operations for 24 hours from its first archive time.</p>
+        <h1 id="archive-session-title">
+          {outlookCopyReady ? "Email archived. Ready to copy." : "Email archived. Editor closed."}
+        </h1>
+        <p>
+          {outlookCopyReady
+            ? "Select Copy to Outlook below to place the final formatted email on your clipboard, then paste it into an HTML message in Outlook."
+            : "This email cannot be edited again. Authorised team members can reopen its read-only copy and repeat copy or download operations for 24 hours from its first archive time."}
+        </p>
         <dl className="archive-session__receipt">
           <div><dt>Message number</dt><dd><code>{receipt.messageNumber}</code></dd></div>
           <div><dt>Verification code</dt><dd><code>{receipt.verificationCode}</code></dd></div>
           <div><dt>Archived</dt><dd>{new Date(receipt.createdAt).toLocaleString("en-GB")}</dd></div>
         </dl>
         <div className="archive-session__actions">
-          <button className="archive-session__primary" type="button" onClick={onOpenArchived}>Open read-only copy</button>
+          {outlookCopyReady && (
+            <button className="archive-session__primary" type="button" onClick={onCopyOutlook}>Copy to Outlook</button>
+          )}
+          <button className={outlookCopyReady ? "" : "archive-session__primary"} type="button" onClick={onOpenArchived}>Open read-only copy</button>
           <button type="button" onClick={onCreateEmail}>Create another email</button>
           <button type="button" onClick={onSearchArchive}>Search the archive</button>
           <button type="button" onClick={onHome}>Home</button>

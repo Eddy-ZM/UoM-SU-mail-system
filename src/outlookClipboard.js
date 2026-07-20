@@ -110,7 +110,7 @@ export async function copyHtmlForOutlook(html) {
   // A native selection copy lets Chromium create Windows' formatted HTML
   // clipboard representation, which Outlook consumes more faithfully than a
   // raw fragment written through the asynchronous Clipboard API.
-  if (copyRenderedHtml(bodyHtml)) return;
+  if (copyRenderedHtml(bodyHtml)) return "native";
 
   if (window.ClipboardItem && navigator.clipboard?.write) {
     await navigator.clipboard.write([
@@ -119,7 +119,7 @@ export async function copyHtmlForOutlook(html) {
         "text/plain": new Blob([plainText], { type: "text/plain" }),
       }),
     ]);
-    return;
+    return "async";
   }
 
   throw new Error("The browser blocked clipboard access.");

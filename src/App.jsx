@@ -1117,14 +1117,18 @@ export function App({ currentUser }) {
   const copyForOutlook = async () => {
     const archived = await prepareArchivedExport("copy_outlook");
     if (!archived) return;
-
-    try {
-      await copyHtmlForOutlook(archived.html);
-      showNotice(`Outlook email copied and archived as ${archived.messageNumber}`);
-    } catch {
-      showNotice("Copy was blocked. Open the read-only archive copy and try again.");
-    }
+    showNotice(`Email archived as ${archived.messageNumber}. Select Copy to Outlook on the receipt.`);
   };
+
+  const copyArchivedForOutlook = useCallback(async () => {
+    if (editorPhase !== EDITOR_PHASE.ARCHIVED || archiveReceipt?.operation !== "copy_outlook") return;
+    try {
+      await copyHtmlForOutlook(html);
+      showNotice(`Outlook email copied from backup ${archiveReceipt.messageNumber}`);
+    } catch {
+      showNotice("Copy was blocked. Select Copy to Outlook and allow clipboard access.");
+    }
+  }, [archiveReceipt, editorPhase, html, showNotice]);
 
   const downloadHtml = async () => {
     const archived = await prepareArchivedExport("download_html");
@@ -1229,6 +1233,7 @@ export function App({ currentUser }) {
         <ArchivedSession
           user={currentUser}
           receipt={archiveReceipt}
+          onCopyOutlook={copyArchivedForOutlook}
           onCreateEmail={startNewEmail}
           onOpenArchived={openArchivedReceipt}
           onSearchArchive={openArchiveSearch}

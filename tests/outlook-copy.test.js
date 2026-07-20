@@ -8,12 +8,24 @@ const outlookClipboardSource = readFileSync(
 );
 const appSource = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
 const archivePanelSource = readFileSync(new URL("../src/ArchivePanel.jsx", import.meta.url), "utf8");
+const workspaceChooserSource = readFileSync(
+  new URL("../src/WorkspaceChooser.jsx", import.meta.url),
+  "utf8",
+);
 
 test("both Outlook copy paths use the shared colour-safe clipboard writer", () => {
   assert.match(appSource, /import \{ copyHtmlForOutlook \} from "\.\/outlookClipboard\.js"/);
-  assert.match(appSource, /await copyHtmlForOutlook\(archived\.html\)/);
+  assert.match(appSource, /const copyArchivedForOutlook = useCallback/);
+  assert.match(appSource, /await copyHtmlForOutlook\(html\)/);
   assert.match(archivePanelSource, /import \{ copyHtmlForOutlook \} from "\.\/outlookClipboard\.js"/);
   assert.match(archivePanelSource, /copyHtmlForOutlook\(selected\.html\)/);
+});
+
+test("the main archive flow requires a fresh user click before Outlook copy", () => {
+  assert.match(appSource, /Select Copy to Outlook on the receipt/);
+  assert.match(appSource, /onCopyOutlook=\{copyArchivedForOutlook\}/);
+  assert.match(workspaceChooserSource, /outlookCopyReady/);
+  assert.match(workspaceChooserSource, /onClick=\{onCopyOutlook\}>Copy to Outlook<\/button>/);
 });
 
 test("the Outlook clipboard fragment materialises text and background colours", () => {
@@ -29,7 +41,7 @@ test("the Outlook clipboard fragment materialises text and background colours", 
 test("Outlook copy prefers a native rendered selection before raw clipboard HTML", () => {
   assert.match(outlookClipboardSource, /function copyRenderedHtml\(bodyHtml\)/);
   assert.match(outlookClipboardSource, /range\.selectNodeContents\(holder\)/);
-  assert.match(outlookClipboardSource, /if \(copyRenderedHtml\(bodyHtml\)\) return;/);
+  assert.match(outlookClipboardSource, /if \(copyRenderedHtml\(bodyHtml\)\) return "native";/);
   assert.ok(
     outlookClipboardSource.indexOf("copyRenderedHtml(bodyHtml)")
       < outlookClipboardSource.indexOf("navigator.clipboard?.write"),
