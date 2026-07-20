@@ -1,4 +1,5 @@
 const TEXT_NODE = 3;
+const ELEMENT_NODE = 1;
 const OUTLOOK_BACKGROUND_ELEMENTS = new Set(["TABLE", "TD", "TH"]);
 
 function normaliseOutlookColour(value) {
@@ -24,7 +25,8 @@ function materialiseElementColours(element, inheritedColour = "") {
     : normaliseOutlookColour(inlineColour) || inheritedColour;
 
   if (colour) {
-    element.style.setProperty("color", colour, "important");
+    element.style.setProperty("color", colour);
+    if (element.tagName === "FONT") element.setAttribute("color", colour);
   }
 
   const backgroundColour = normaliseOutlookColour(
@@ -36,17 +38,60 @@ function materialiseElementColours(element, inheritedColour = "") {
 
   for (const node of [...element.childNodes]) {
     if (node.nodeType === TEXT_NODE) {
-      if (!colour || !node.textContent?.trim() || element.tagName === "FONT") continue;
-      // Outlook Classic uses Word's HTML engine, so retain the legacy colour
-      // attribute as a fallback when pasted content loses inherited CSS.
+      if (!colour || !node.textContent?.trim()) continue;
+
+      // Outlook preserves colour most reliably when it is direct formatting on
+      // the text itself. Use both an inline span and the legacy font attribute:
+      // Word-based Outlook versions may discard either inherited CSS or one of
+      // these representations while converting clipboard HTML.
+      const span = element.ownerDocument.createElement("span");
+      span.style.setProperty("color", colour);
       const font = element.ownerDocument.createElement("font");
       font.setAttribute("color", colour);
-      font.style.setProperty("color", colour, "important");
-      node.replaceWith(font);
+      font.style.setProperty("color", colour);
+      node.replaceWith(span);
+      span.appendChild(font);
       font.appendChild(node);
       continue;
     }
-    if (node.nodeType === 1) materialiseElementColours(node, colour);
+    if (node.nodeType === ELEMENT_NODE) materialiseElementColours(node, colour);
+  }
+}
+
+function copyRenderedHtml(bodyHtml) {
+  const holder = document.createElement("div");
+  holder.innerHTML = bodyHtml;
+  holder.setAttribute("contenteditable", "true");
+  holder.setAttribute("aria-hidden", "true");
+  holder.style.position = "fixed";
+  holder.style.left = "-10000px";
+  holder.style.top = "0";
+  holder.style.width = "800px";
+  holder.style.background = "#ffffff";
+  document.body.appendChild(holder);
+
+  const previousFocus = document.activeElement;
+  const selection = window.getSelection();
+  const savedRanges = selection
+    ? Array.from({ length: selection.rangeCount }, (_, index) => selection.getRangeAt(index).cloneRange())
+    : [];
+
+  try {
+    holder.focus({ preventScroll: true });
+    const range = document.createRange();
+    range.selectNodeContents(holder);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    return document.execCommand("copy");
+  } catch {
+    return false;
+  } finally {
+    selection?.removeAllRanges();
+    for (const range of savedRanges) selection?.addRange(range);
+    holder.remove();
+    if (previousFocus instanceof HTMLElement && previousFocus.isConnected) {
+      previousFocus.focus({ preventScroll: true });
+    }
   }
 }
 
@@ -62,6 +107,11 @@ export function prepareOutlookClipboardContent(html) {
 export async function copyHtmlForOutlook(html) {
   const { bodyHtml, plainText } = prepareOutlookClipboardContent(html);
 
+  // A native selection copy lets Chromium create Windows' formatted HTML
+  // clipboard representation, which Outlook consumes more faithfully than a
+  // raw fragment written through the asynchronous Clipboard API.
+  if (copyRenderedHtml(bodyHtml)) return;
+
   if (window.ClipboardItem && navigator.clipboard?.write) {
     await navigator.clipboard.write([
       new window.ClipboardItem({
@@ -72,21 +122,5 @@ export async function copyHtmlForOutlook(html) {
     return;
   }
 
-  const holder = document.createElement("div");
-  holder.innerHTML = bodyHtml;
-  holder.style.position = "fixed";
-  holder.style.left = "-9999px";
-  document.body.appendChild(holder);
-  try {
-    const range = document.createRange();
-    range.selectNodeContents(holder);
-    const selection = window.getSelection();
-    selection.removeAllRanges();
-    selection.addRange(range);
-    const copied = document.execCommand("copy");
-    selection.removeAllRanges();
-    if (!copied) throw new Error("The browser blocked clipboard access.");
-  } finally {
-    holder.remove();
-  }
+  throw new Error("The browser blocked clipboard access.");
 }
