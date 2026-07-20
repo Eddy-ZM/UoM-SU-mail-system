@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { canReopenArchive } from "../shared/archive-reopen.js";
 import { downloadFilenameForMessageNumber } from "../shared/email-integrity.js";
 import { loadArchive, loadArchives, removeArchive } from "./archiveClient.js";
+import { copyHtmlForOutlook } from "./outlookClipboard.js";
 
 const OPERATION_LABELS = {
   copy_html: "Copy HTML",
@@ -31,40 +32,6 @@ async function copyHtmlSource(html) {
     return;
   }
   legacyCopyText(html);
-}
-
-async function copyHtmlForOutlook(html) {
-  const parsed = new DOMParser().parseFromString(html, "text/html");
-  const bodyHtml = parsed.body.innerHTML;
-  const plainText = parsed.body.innerText.replace(/\n{3,}/g, "\n\n").trim();
-
-  if (window.ClipboardItem && navigator.clipboard?.write) {
-    await navigator.clipboard.write([
-      new window.ClipboardItem({
-        "text/html": new Blob([bodyHtml], { type: "text/html" }),
-        "text/plain": new Blob([plainText], { type: "text/plain" }),
-      }),
-    ]);
-    return;
-  }
-
-  const holder = document.createElement("div");
-  holder.innerHTML = bodyHtml;
-  holder.style.position = "fixed";
-  holder.style.left = "-9999px";
-  document.body.appendChild(holder);
-  try {
-    const range = document.createRange();
-    range.selectNodeContents(holder);
-    const selection = window.getSelection();
-    selection.removeAllRanges();
-    selection.addRange(range);
-    const copied = document.execCommand("copy");
-    selection.removeAllRanges();
-    if (!copied) throw new Error("The browser blocked clipboard access.");
-  } finally {
-    holder.remove();
-  }
 }
 
 function downloadArchivedHtml(archive) {

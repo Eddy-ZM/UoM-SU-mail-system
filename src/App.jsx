@@ -25,6 +25,7 @@ import { DEFAULT_PRESET_ID, EMAIL_PRESETS, getPresetById } from "./emailPresets.
 import { ArchivePanel } from "./ArchivePanel.jsx";
 import { archiveEmailExport } from "./archiveClient.js";
 import { buildArchiveConfirmationDetails } from "./archiveConfirmation.js";
+import { copyHtmlForOutlook } from "./outlookClipboard.js";
 import {
   clearDraft,
   isDraftExpired,
@@ -1116,33 +1117,9 @@ export function App({ currentUser }) {
   const copyForOutlook = async () => {
     const archived = await prepareArchivedExport("copy_outlook");
     if (!archived) return;
-    const parsed = new DOMParser().parseFromString(archived.html, "text/html");
-    const bodyHtml = parsed.body.innerHTML;
-    const plainText = parsed.body.innerText.replace(/\n{3,}/g, "\n\n").trim();
 
     try {
-      if (window.ClipboardItem && navigator.clipboard?.write) {
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            "text/html": new Blob([bodyHtml], { type: "text/html" }),
-            "text/plain": new Blob([plainText], { type: "text/plain" }),
-          }),
-        ]);
-      } else {
-        const holder = document.createElement("div");
-        holder.innerHTML = bodyHtml;
-        holder.style.position = "fixed";
-        holder.style.left = "-9999px";
-        document.body.appendChild(holder);
-        const range = document.createRange();
-        range.selectNodeContents(holder);
-        const selection = window.getSelection();
-        selection.removeAllRanges();
-        selection.addRange(range);
-        document.execCommand("copy");
-        selection.removeAllRanges();
-        holder.remove();
-      }
+      await copyHtmlForOutlook(archived.html);
       showNotice(`Outlook email copied and archived as ${archived.messageNumber}`);
     } catch {
       showNotice("Copy was blocked. Open the read-only archive copy and try again.");
