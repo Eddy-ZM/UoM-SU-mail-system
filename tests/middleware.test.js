@@ -211,8 +211,9 @@ test("content denial keeps public pages available but never serves the workspace
   assert.match(body, new RegExp(ACCESS_RESTRICTION_TITLE));
   assert.match(body, new RegExp(ACCESS_RESTRICTION_MESSAGE.replaceAll("'", "&#039;")));
   assert.match(body, /Current access position/);
-  assert.match(body, /\/verify\/\?restrictionNotice=shown/);
-  assert.match(body, /\/agreement\/privacy-notice\/\?restrictionNotice=shown/);
+  assert.match(body, /href="\/verify\/"/);
+  assert.match(body, /href="\/agreement\/privacy-notice\/"/);
+  assert.doesNotMatch(body, /restrictionNotice=shown/);
   assert.match(body, /<form method="post" action="\/api\/access\/logout">/);
   assert.match(body, />Sign out<\/button>/);
   assert.match(

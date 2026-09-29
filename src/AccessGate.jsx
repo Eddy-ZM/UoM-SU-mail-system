@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ACCESS_RESTRICTION_MESSAGE,
   ACCESS_RESTRICTION_TITLE,
-  publicPathFromRestriction,
   SERVICE_ENTRY_DENIED_MESSAGE,
   SERVICE_ENTRY_DENIED_TITLE,
 } from "../shared/service-restriction.js";
@@ -106,7 +105,7 @@ export function AccessGate({ children }) {
           </div>
           <div className="access-gate-status">
             <span>Service status</span>
-            <strong>{isRestricted ? "Pre-release access" : isForbidden ? "Access denied" : "Access unavailable"}</strong>
+            <strong>{isRestricted ? "Restricted access" : isForbidden ? "Access denied" : "Access unavailable"}</strong>
           </div>
         </header>
 
@@ -119,7 +118,7 @@ export function AccessGate({ children }) {
           <div className="access-gate-copy">
             <p className="access-gate-kicker">
               {isRestricted
-                ? "Pre-release service notice"
+                ? "Account access notice"
                 : isForbidden
                   ? "Service entry notice"
                   : "Authentication service notice"}
@@ -158,7 +157,7 @@ export function AccessGate({ children }) {
 
           <div className="access-gate-actions">
             {isRestricted && (
-              <a className="is-primary" href={publicPathFromRestriction("/verify/")}>Open public verification</a>
+              <a className="is-primary" href="/verify/">Open public verification</a>
             )}
             <button type="button" onClick={verifyAccess}>Check access again</button>
             <a href="https://user.chemvault.science/">Review account access</a>
@@ -175,10 +174,7 @@ export function AccessGate({ children }) {
             <strong>Manchester Chemistry Representative Mail Studio</strong>
             <span>Student representative communications service</span>
           </div>
-          <a href={isRestricted
-            ? publicPathFromRestriction("/agreement/privacy-notice/")
-            : "/agreement/privacy-notice/"}
-          >
+          <a href="/agreement/privacy-notice/">
             Privacy notice
           </a>
         </footer>

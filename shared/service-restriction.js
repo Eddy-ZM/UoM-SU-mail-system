@@ -1,31 +1,9 @@
-export const ACCESS_RESTRICTION_TITLE = "Limited pre-release access";
+export const ACCESS_RESTRICTION_TITLE = "Account access restricted";
 
 export const ACCESS_RESTRICTION_MESSAGE =
-  "Pending approval from the University of Manchester Department of Chemistry and other relevant University departments, access to the service's principal features is temporarily restricted.";
+  "Your account is signed in and may use the public services, but it is not currently permitted to use the main workspace or archive services. Please contact a ChemVault User System administrator if you believe this is incorrect.";
 
 export const SERVICE_ENTRY_DENIED_TITLE = "Service access denied";
 
 export const SERVICE_ENTRY_DENIED_MESSAGE =
   "Your account is signed in, but it does not have permission to enter the Manchester Chemistry Representative Mail Studio. Please contact a ChemVault User System administrator.";
-
-export const PUBLIC_ACCESS_RESTRICTION_TITLE = "Public services remain available";
-
-export const PUBLIC_ACCESS_RESTRICTION_MESSAGE =
-  `${ACCESS_RESTRICTION_MESSAGE} This public page remains available during the pre-release period.`;
-
-export const WORKSPACE_PRE_RELEASE_TITLE = "Authorised pre-release access";
-
-export const WORKSPACE_PRE_RELEASE_MESSAGE =
-  "This service is awaiting approval from the University of Manchester Department of Chemistry and other relevant University departments. Your account has been granted pre-release access to all service features, including archive viewing and creation.";
-
-export const RESTRICTION_NOTICE_BYPASS_PARAM = "restrictionNotice";
-export const RESTRICTION_NOTICE_BYPASS_VALUE = "shown";
-
-export function publicPathFromRestriction(pathname) {
-  const separator = pathname.includes("?") ? "&" : "?";
-  return `${pathname}${separator}${RESTRICTION_NOTICE_BYPASS_PARAM}=${RESTRICTION_NOTICE_BYPASS_VALUE}`;
-}
-
-export function shouldBypassRepeatedPublicNotice(search = "") {
-  return new URLSearchParams(search).get(RESTRICTION_NOTICE_BYPASS_PARAM) === RESTRICTION_NOTICE_BYPASS_VALUE;
-}

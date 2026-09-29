@@ -1,5 +1,3 @@
-import { publicPathFromRestriction } from "../../shared/service-restriction.js";
-
 export const REQUIRED_PERMISSION = "service:uom-su-mail-system:access";
 export const FULL_ACCESS_PERMISSION = "feature:uom-su-mail-system:full_access";
 export const HANDOFF_AUDIENCE = "uom-su-mail-system";
@@ -326,7 +324,7 @@ export function gatePageResponse(title, message, status, extraHeaders = {}, opti
   const safeMessage = escapeHtml(message);
   const isDenied = Number(status) === 403;
   const isRestricted = isDenied && options.limitedAccess === true;
-  const statusLabel = isRestricted ? "Pre-release access" : isDenied ? "Access denied" : "Secure access check";
+  const statusLabel = isRestricted ? "Restricted access" : isDenied ? "Access denied" : "Secure access check";
   const serviceLabel = isRestricted ? "Limited access" : isDenied ? "Entry denied" : "Identity verification";
   const position = isRestricted
     ? `<section class="position" aria-label="Current access position">
@@ -342,12 +340,10 @@ export function gatePageResponse(title, message, status, extraHeaders = {}, opti
       ? "Entry remains closed until service access is granted to this account."
       : "Access will remain closed until your account and permission can be verified securely."}</aside>`;
   const primaryAction = isRestricted
-    ? `<a class="primary" href="${publicPathFromRestriction("/verify/")}">Open public verification</a>`
+    ? `<a class="primary" href="/verify/">Open public verification</a>`
     : `<a class="primary" href="/">Try access again</a>`;
-  const privacyHref = isRestricted
-    ? publicPathFromRestriction("/agreement/privacy-notice/")
-    : "/agreement/privacy-notice/";
-  const reportHref = isRestricted ? publicPathFromRestriction("/report/") : "/report/";
+  const privacyHref = "/agreement/privacy-notice/";
+  const reportHref = "/report/";
   const signOutAction = isDenied
     ? `<form method="post" action="/api/access/logout"><button type="submit">Sign out</button></form>`
     : "";
@@ -416,7 +412,7 @@ export function gatePageResponse(title, message, status, extraHeaders = {}, opti
       </header>
       <div class="service-strip"><span>Manchester Chemistry Representative Mail Studio</span><strong>${serviceLabel}</strong></div>
       <div class="body">
-        <p class="kicker">${isRestricted ? "Pre-release service notice" : isDenied ? "Service entry notice" : "Secure access check"}</p>
+        <p class="kicker">${isRestricted ? "Account access notice" : isDenied ? "Service entry notice" : "Secure access check"}</p>
         <h1>${safeTitle}</h1>
         <p class="lead">${safeMessage}</p>
         ${position}
