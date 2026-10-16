@@ -24,6 +24,7 @@ import {
 } from "./emailUtils.js";
 import { DEFAULT_PRESET_ID, EMAIL_PRESETS, getPresetById } from "./emailPresets.js";
 import { ArchivePanel } from "./ArchivePanel.jsx";
+import { ReportArchive } from "./ReportArchive.jsx";
 import { archiveEmailExport } from "./archiveClient.js";
 import { buildArchiveConfirmationDetails } from "./archiveConfirmation.js";
 import { copyHtmlForOutlook } from "./outlookClipboard.js";
@@ -39,6 +40,7 @@ import {
   archiveReceiptFromExport,
   canModifyDraft,
 } from "./editorSession.js";
+
 import {
   downloadFilenameForMessageNumber,
   ensureMessageNumber,
@@ -211,6 +213,7 @@ export function App({ currentUser }) {
   const [activeFormats, setActiveFormats] = useState(DEFAULT_ACTIVE_FORMATS);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const [reportArchiveOpen, setReportArchiveOpen] = useState(false);
   const [archiveInitialId, setArchiveInitialId] = useState("");
   const [exportBusy, setExportBusy] = useState("");
   const [signingOut, setSigningOut] = useState(false);
@@ -417,6 +420,12 @@ export function App({ currentUser }) {
     setArchiveOpen(true);
   }, []);
 
+  const openReportArchive = useCallback(() => {
+    setArchiveOpen(false);
+    setArchiveInitialId("");
+    setReportArchiveOpen(true);
+  }, []);
+
   const openArchivedReceipt = useCallback(() => {
     if (!archiveReceipt?.archiveId) return;
     setArchiveInitialId(archiveReceipt.archiveId);
@@ -428,9 +437,14 @@ export function App({ currentUser }) {
     setArchiveInitialId("");
   }, []);
 
+  const closeReportArchive = useCallback(() => {
+    setReportArchiveOpen(false);
+  }, []);
+
   const returnHome = useCallback(() => {
     setArchiveReceipt(null);
     setArchiveOpen(false);
+    setReportArchiveOpen(false);
     setArchiveInitialId("");
     setEditorPhase(EDITOR_PHASE.CHOOSER);
   }, []);
@@ -1208,6 +1222,17 @@ export function App({ currentUser }) {
     return <ArchiveProgress user={currentUser} />;
   }
 
+  if (reportArchiveOpen) {
+    return (
+      <>
+        <ArchiveWorkspace user={currentUser} onLogout={signOut} isLoggingOut={signingOut}>
+          <ReportArchive onClose={closeReportArchive} />
+        </ArchiveWorkspace>
+        {notice && <div className="toast" role="status" aria-live="polite">{notice}</div>}
+      </>
+    );
+  }
+
   if (archiveOpen) {
     const closeLabel = editorPhase === EDITOR_PHASE.EDITING
       ? "Back to editor"
@@ -1241,6 +1266,7 @@ export function App({ currentUser }) {
           onResumeDraft={resumeSavedDraft}
           onDeleteDraft={deleteSavedDraft}
           onSearchArchive={openArchiveSearch}
+          onOpenReportArchive={openReportArchive}
           onLogout={signOut}
           isLoggingOut={signingOut}
         />

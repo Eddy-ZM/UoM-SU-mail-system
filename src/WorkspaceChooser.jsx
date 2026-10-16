@@ -77,6 +77,7 @@ export function WorkspaceChooser({
   onResumeDraft,
   onDeleteDraft,
   onSearchArchive,
+  onOpenReportArchive,
   onLogout,
   logoutSlot = null,
   isLoggingOut = false,
@@ -92,7 +93,7 @@ export function WorkspaceChooser({
         <div className="workspace-chooser__intro">
           <span className="workspace-chooser__eyebrow">Student Representatives workspace</span>
           <h1 id="workspace-chooser-title">What would you like to do?</h1>
-          <p>Create a publication-ready Manchester email or find a message your team has saved before.</p>
+          <p>Create a publication-ready Manchester email, review student submissions or find a message your team has saved before.</p>
         </div>
 
         {draft && (
@@ -113,7 +114,7 @@ export function WorkspaceChooser({
           </section>
         )}
 
-        <div className="workspace-chooser__actions" aria-label="Mail workspace actions">
+        <div className="workspace-chooser__actions" aria-label="Representative workspace actions">
           <button className="workspace-action workspace-action--primary" type="button" onClick={onCreateEmail}>
             <span className="workspace-action__copy">
               <strong>Create a new email</strong>
@@ -125,6 +126,13 @@ export function WorkspaceChooser({
             <span className="workspace-action__copy">
               <strong>Search the archive</strong>
               <small>Review immutable backups and verification records.</small>
+            </span>
+          </button>
+
+          <button className="workspace-action" type="button" onClick={onOpenReportArchive}>
+            <span className="workspace-action__copy">
+              <strong>Student reports</strong>
+              <small>View submitted reports and follow-up requests.</small>
             </span>
           </button>
         </div>

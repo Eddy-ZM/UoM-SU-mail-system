@@ -26,5 +26,6 @@ When implementing from a selected generated mock, treat that image as the source
 - Display the visible `Restricted` state in red and describe it as an account-level access restriction, not a pre-release state.
 - During the brief permission check or login redirect, show only the verification animation. Do not flash the institutional masthead, explanatory copy, footer, or privacy link before the final access state is known.
 - After an allowed account enters the main workspace, expose the workspace directly without a pre-release notice.
+- The workspace Home screen includes a `Student reports` entry for authorised representatives to view submitted reports and follow-up requests; keep the report viewer behind the existing full-access permission.
 - Restricted users must always have a visible `Sign out` action on both the server-rendered and React restriction pages. It must use the existing POST logout flow, clear the local handoff, and allow the trusted User System logout origin through the server-rendered page's `form-action` CSP before redirecting.
 - Full-screen notices must not shift the page behind them when opened or dismissed. Keep the root scrollbar and page geometry untouched, contain scrolling at the overlay, and move focus without scrolling.

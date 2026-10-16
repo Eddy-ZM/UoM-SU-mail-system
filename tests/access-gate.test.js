@@ -32,6 +32,8 @@ test("certificate challenges, privacy notice and compiled assets stay public whi
   assert.equal(isPublicRequestPath("/api/verification/private"), false);
   assert.equal(isPublicRequestPath("/reports-admin"), false);
   assert.equal(isPublicRequestPath("/api/reports/private"), false);
+  assert.equal(isPublicRequestPath("/api/report-archive"), false);
+  assert.equal(isPublicRequestPath("/api/report-archive/report-1"), false);
   assert.equal(isPublicRequestPath("/.well-known-hidden/acme-challenge/token"), false);
   assert.equal(isPublicRequestPath("/agreement/privacy-notice-hidden"), false);
   assert.equal(isPublicRequestPath("/"), false);
