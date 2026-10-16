@@ -229,6 +229,7 @@ export function App({ currentUser }) {
   const updateOrigin = useRef("initial");
   const noticeTimer = useRef(null);
   const archiveLockRef = useRef(false);
+  const autoDownloadedOutlookArchiveRef = useRef("");
   const lastLayoutSafeHtmlRef = useRef(
     getEmailLayoutIssues(initialDraft.html, initialTemplate).length === 0 ? initialDraft.html : initialTemplate,
   );
@@ -1167,8 +1168,10 @@ export function App({ currentUser }) {
     }
   }, [archiveReceipt, editorPhase, html, showNotice]);
 
-  const openArchivedInOutlook = useCallback(() => {
+  const downloadArchivedOutlookDraft = useCallback((automatic = false) => {
     if (editorPhase !== EDITOR_PHASE.ARCHIVED || !archiveReceipt) return;
+    if (automatic && autoDownloadedOutlookArchiveRef.current === archiveReceipt.archiveId) return;
+    if (automatic) autoDownloadedOutlookArchiveRef.current = archiveReceipt.archiveId;
     try {
       const draft = buildOutlookDraft({
         html,
@@ -1176,11 +1179,22 @@ export function App({ currentUser }) {
         messageNumber: archiveReceipt.messageNumber,
       });
       downloadOutlookDraft(draft);
-      showNotice("Outlook draft created. Open the downloaded file if Outlook does not launch automatically.");
+      showNotice(automatic
+        ? "Outlook draft downloaded. Open the .eml file to continue."
+        : "Outlook draft downloaded again. Open the .eml file to continue.");
     } catch {
+      if (automatic) autoDownloadedOutlookArchiveRef.current = "";
       showNotice("The Outlook draft could not be created. Open the read-only copy and try again.");
     }
   }, [archiveReceipt, editorPhase, html, showNotice]);
+
+  const autoDownloadArchivedOutlookDraft = useCallback(() => {
+    downloadArchivedOutlookDraft(true);
+  }, [downloadArchivedOutlookDraft]);
+
+  const redownloadArchivedOutlookDraft = useCallback(() => {
+    downloadArchivedOutlookDraft(false);
+  }, [downloadArchivedOutlookDraft]);
 
   const downloadHtml = async () => {
     const archived = await prepareArchivedExport("download_html");
@@ -1297,7 +1311,8 @@ export function App({ currentUser }) {
         <ArchivedSession
           user={currentUser}
           receipt={archiveReceipt}
-          onOpenOutlook={openArchivedInOutlook}
+          onAutoDownloadOutlook={autoDownloadArchivedOutlookDraft}
+          onDownloadOutlook={redownloadArchivedOutlookDraft}
           onCopyOutlook={copyArchivedForOutlook}
           onCreateEmail={startNewEmail}
           onOpenArchived={openArchivedReceipt}

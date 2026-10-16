@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import "./workspace-chooser.css";
 
 function displayNameFor(user) {
@@ -198,7 +199,8 @@ export function ArchiveProgress({ user, onLogout, isLoggingOut = false }) {
 export function ArchivedSession({
   user,
   receipt,
-  onOpenOutlook,
+  onAutoDownloadOutlook,
+  onDownloadOutlook,
   onCopyOutlook,
   onCreateEmail,
   onOpenArchived,
@@ -208,7 +210,11 @@ export function ArchivedSession({
   isLoggingOut = false,
 }) {
   const outlookCopyReady = receipt.operation === "copy_outlook" && typeof onCopyOutlook === "function";
-  const outlookDraftReady = typeof onOpenOutlook === "function";
+  const outlookDraftReady = receipt.operation === "copy_outlook" && typeof onDownloadOutlook === "function";
+
+  useEffect(() => {
+    if (outlookDraftReady && typeof onAutoDownloadOutlook === "function") onAutoDownloadOutlook();
+  }, [onAutoDownloadOutlook, outlookDraftReady]);
 
   return (
     <main className="workspace-chooser archive-session">
@@ -216,11 +222,11 @@ export function ArchivedSession({
       <section className="archive-session__content" aria-labelledby="archive-session-title">
         <p className="archive-session__eyebrow">Immutable backup created</p>
         <h1 id="archive-session-title">
-          {outlookDraftReady ? "Email archived. Ready for Outlook." : "Email archived. Editor closed."}
+          {outlookDraftReady ? "Email archived. Outlook draft downloaded." : "Email archived. Editor closed."}
         </h1>
         <p>
           {outlookDraftReady
-            ? "Open the prepared Outlook draft with its subject and formatting already in place, then add the recipient address. If your browser downloads the draft, open the downloaded file once."
+            ? "An editable .eml draft has been downloaded automatically. Open the file in Outlook, add the recipient address and review the message before sending."
             : "This email cannot be edited again. Authorised team members can reopen its read-only copy and repeat copy or download operations for 24 hours from its first archive time."}
         </p>
         <dl className="archive-session__receipt">
@@ -231,7 +237,7 @@ export function ArchivedSession({
         </dl>
         <div className="archive-session__actions">
           {outlookDraftReady && (
-            <button className="archive-session__primary" type="button" onClick={onOpenOutlook}>Open in Outlook</button>
+            <button className="archive-session__primary" type="button" onClick={onDownloadOutlook}>Download .eml again</button>
           )}
           {outlookCopyReady && (
             <button type="button" onClick={onCopyOutlook}>Copy to Outlook</button>

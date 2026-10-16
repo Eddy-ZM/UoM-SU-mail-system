@@ -38,10 +38,11 @@ test("draft headers cannot be extended through the subject or filename", () => {
   assert.equal(draft.filename, "CHEM-SR-A1B2.eml");
 });
 
-test("the archive receipt shows the subject and both Outlook delivery paths", () => {
+test("the archive receipt explains the automatic download and keeps manual fallbacks", () => {
   const source = readFileSync(new URL("../src/WorkspaceChooser.jsx", import.meta.url), "utf8");
   assert.match(source, /<dt>Subject<\/dt>/);
-  assert.match(source, />Open in Outlook<\/button>/);
+  assert.match(source, /has been downloaded automatically/);
+  assert.match(source, />Download \.eml again<\/button>/);
   assert.match(source, />Copy to Outlook<\/button>/);
-  assert.match(source, /then add the recipient address/);
+  assert.match(source, /onAutoDownloadOutlook\(\)/);
 });

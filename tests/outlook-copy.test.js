@@ -21,10 +21,12 @@ test("both Outlook copy paths use the shared colour-safe clipboard writer", () =
   assert.match(archivePanelSource, /copyHtmlForOutlook\(selected\.html\)/);
 });
 
-test("the main archive flow requires a fresh user click before Outlook copy", () => {
-  assert.match(appSource, /Select Copy to Outlook on the receipt/);
+test("the archive flow auto-downloads the draft but keeps clipboard copy behind a fresh click", () => {
+  assert.match(appSource, /autoDownloadArchivedOutlookDraft/);
+  assert.match(appSource, /onAutoDownloadOutlook=\{autoDownloadArchivedOutlookDraft\}/);
   assert.match(appSource, /onCopyOutlook=\{copyArchivedForOutlook\}/);
   assert.match(workspaceChooserSource, /outlookCopyReady/);
+  assert.match(workspaceChooserSource, /onAutoDownloadOutlook\(\)/);
   assert.match(workspaceChooserSource, /onClick=\{onCopyOutlook\}>Copy to Outlook<\/button>/);
 });
 
