@@ -38,11 +38,13 @@ test("draft headers cannot be extended through the subject or filename", () => {
   assert.equal(draft.filename, "CHEM-SR-A1B2.eml");
 });
 
-test("the archive receipt explains the automatic download and keeps manual fallbacks", () => {
+test("the archive receipt explains Graph draft creation and keeps manual fallbacks", () => {
   const source = readFileSync(new URL("../src/WorkspaceChooser.jsx", import.meta.url), "utf8");
   assert.match(source, /<dt>Subject<\/dt>/);
   assert.match(source, /has been downloaded automatically/);
-  assert.match(source, />Download \.eml again<\/button>/);
+  assert.match(source, /Create Outlook draft/);
+  assert.match(source, /Download \.eml backup/);
+  assert.match(source, /Download \.eml again/);
   assert.match(source, />Copy to Outlook<\/button>/);
   assert.match(source, /onAutoDownloadOutlook\(\)/);
 });

@@ -28,6 +28,7 @@ The published site also contains the formal Privacy Notice used by the Mail Syst
 - Update the CTA destination and both Student Representative email addresses without editing HTML.
 - Generate each contact name from the email prefix automatically, removing digits and separator characters.
 - Copy formatted email content for new Outlook.
+- Create the archived HTML message directly in an authorised representative's Outlook Drafts folder when the tenant-scoped Microsoft Graph connection is enabled; the system never sends the message.
 - Copy the complete HTML source or download a UTF-8 `.html` file.
 - Generate a persistent `CHEM-SR-` message number from four cryptographically secure random bytes for every new draft.
 - Generate a full SHA-256 over canonical exported HTML, retain it internally, and place a 64-bit formatted lookup code in the protected footer.
@@ -70,3 +71,9 @@ npx wrangler d1 migrations apply uom-su-mail-archive --remote
 ```
 
 For local Pages Functions development, apply the same migration without `--remote` and run Pages with the configuration in `wrangler.toml`. The `email_archives_are_immutable` database trigger rejects every update. The application exposes only create, read, search and owner-only delete operations; it has no archive-update endpoint.
+
+### Optional Outlook draft connection
+
+Register a single-tenant Microsoft Entra web application with the exact redirect URI `https://mailsys.uomsu.chemvault.science/api/outlook/callback` and delegated Microsoft Graph permission `Mail.ReadWrite`. Do not grant `Mail.Send`. Set `MS_GRAPH_CLIENT_ID`, `MS_GRAPH_TENANT_ID` and `MS_GRAPH_REDIRECT_URI` as Pages variables. Store `MS_GRAPH_CLIENT_SECRET` and a base64url-encoded 32-byte random `GRAPH_OAUTH_STATE_KEY` as Pages secrets. The feature stays disabled and the existing `.eml` workflow remains active until all settings are valid.
+
+The server reads the final HTML from its immutable D1 archive, uses Authorization Code with PKCE, creates one unsent message through `POST /me/messages`, and immediately discards the access token. It does not store Microsoft access or refresh tokens.

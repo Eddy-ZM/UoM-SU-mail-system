@@ -21,12 +21,15 @@ test("both Outlook copy paths use the shared colour-safe clipboard writer", () =
   assert.match(archivePanelSource, /copyHtmlForOutlook\(selected\.html\)/);
 });
 
-test("the archive flow auto-downloads the draft but keeps clipboard copy behind a fresh click", () => {
+test("the archive flow prefers Graph when configured and otherwise auto-downloads the draft", () => {
   assert.match(appSource, /autoDownloadArchivedOutlookDraft/);
-  assert.match(appSource, /onAutoDownloadOutlook=\{autoDownloadArchivedOutlookDraft\}/);
+  assert.match(appSource, /outlookGraphState=\{outlookGraphState\}/);
+  assert.match(appSource, /onCreateOutlookDraft=\{createArchivedOutlookDraft\}/);
+  assert.match(appSource, /onAutoDownloadOutlook=\{outlookGraphState === "unavailable" \? autoDownloadArchivedOutlookDraft : undefined\}/);
   assert.match(appSource, /onCopyOutlook=\{copyArchivedForOutlook\}/);
   assert.match(workspaceChooserSource, /outlookCopyReady/);
-  assert.match(workspaceChooserSource, /onAutoDownloadOutlook\(\)/);
+  assert.match(workspaceChooserSource, /outlookGraphState === "unavailable"/);
+  assert.match(workspaceChooserSource, />Create Outlook draft<\/button>/);
   assert.match(workspaceChooserSource, /onClick=\{onCopyOutlook\}>Copy to Outlook<\/button>/);
 });
 

@@ -199,6 +199,8 @@ export function ArchiveProgress({ user, onLogout, isLoggingOut = false }) {
 export function ArchivedSession({
   user,
   receipt,
+  outlookGraphState = "unavailable",
+  onCreateOutlookDraft,
   onAutoDownloadOutlook,
   onDownloadOutlook,
   onCopyOutlook,
@@ -211,10 +213,12 @@ export function ArchivedSession({
 }) {
   const outlookCopyReady = receipt.operation === "copy_outlook" && typeof onCopyOutlook === "function";
   const outlookDraftReady = receipt.operation === "copy_outlook" && typeof onDownloadOutlook === "function";
+  const outlookGraphReady = outlookDraftReady && outlookGraphState === "available" && typeof onCreateOutlookDraft === "function";
+  const outlookGraphChecking = outlookDraftReady && outlookGraphState === "checking";
 
   useEffect(() => {
-    if (outlookDraftReady && typeof onAutoDownloadOutlook === "function") onAutoDownloadOutlook();
-  }, [onAutoDownloadOutlook, outlookDraftReady]);
+    if (outlookDraftReady && outlookGraphState === "unavailable" && typeof onAutoDownloadOutlook === "function") onAutoDownloadOutlook();
+  }, [onAutoDownloadOutlook, outlookDraftReady, outlookGraphState]);
 
   return (
     <main className="workspace-chooser archive-session">
@@ -222,10 +226,18 @@ export function ArchivedSession({
       <section className="archive-session__content" aria-labelledby="archive-session-title">
         <p className="archive-session__eyebrow">Immutable backup created</p>
         <h1 id="archive-session-title">
-          {outlookDraftReady ? "Email archived. Outlook draft downloaded." : "Email archived. Editor closed."}
+          {outlookGraphReady
+            ? "Email archived. Ready for Outlook."
+            : outlookGraphChecking
+              ? "Email archived. Checking Outlook connection."
+              : outlookDraftReady ? "Email archived. Outlook draft downloaded." : "Email archived. Editor closed."}
         </h1>
         <p>
-          {outlookDraftReady
+          {outlookGraphReady
+            ? "Create the draft directly in your Microsoft 365 Outlook mailbox. Outlook will open it with the subject and formatted message ready; add the recipient address, review and send."
+            : outlookGraphChecking
+              ? "The archived email is safe. The mail studio is checking whether direct Microsoft 365 draft creation is available."
+              : outlookDraftReady
             ? "An editable .eml draft has been downloaded automatically. Open the file in Outlook, add the recipient address and review the message before sending."
             : "This email cannot be edited again. Authorised team members can reopen its read-only copy and repeat copy or download operations for 24 hours from its first archive time."}
         </p>
@@ -236,8 +248,13 @@ export function ArchivedSession({
           <div><dt>Archived</dt><dd>{new Date(receipt.createdAt).toLocaleString("en-GB")}</dd></div>
         </dl>
         <div className="archive-session__actions">
+          {outlookGraphReady && (
+            <button className="archive-session__primary" type="button" onClick={onCreateOutlookDraft}>Create Outlook draft</button>
+          )}
           {outlookDraftReady && (
-            <button className="archive-session__primary" type="button" onClick={onDownloadOutlook}>Download .eml again</button>
+            <button className={outlookGraphReady ? "" : "archive-session__primary"} type="button" onClick={onDownloadOutlook}>
+              {outlookGraphReady ? "Download .eml backup" : "Download .eml again"}
+            </button>
           )}
           {outlookCopyReady && (
             <button type="button" onClick={onCopyOutlook}>Copy to Outlook</button>

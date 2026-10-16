@@ -65,8 +65,8 @@ export function PrivacyNotice() {
             <caption>Document control</caption>
             <tbody>
               <tr><th scope="row">Document owner</th><td>Department of Chemistry Student Representatives Team</td><th scope="row">Reference</th><td>UOM-CHEM-SR-PRIV-001</td></tr>
-              <tr><th scope="row">Effective date</th><td>1 July 2026</td><th scope="row">Last reviewed</th><td>20 July 2026</td></tr>
-              <tr><th scope="row">Version</th><td>1.3</td><th scope="row">Next review</th><td>By 1 July 2027</td></tr>
+              <tr><th scope="row">Effective date</th><td>1 July 2026</td><th scope="row">Last reviewed</th><td>17 October 2026</td></tr>
+              <tr><th scope="row">Version</th><td>1.4</td><th scope="row">Next review</th><td>By 1 July 2027</td></tr>
             </tbody>
           </table>
         </div>
@@ -143,6 +143,15 @@ export function PrivacyNotice() {
               may also process ordinary request information such as IP address, browser type, request time and requested
               page for delivery, security and abuse prevention.
             </p>
+            <p>
+              Where an authorised representative chooses the optional Outlook draft connection, the Service requests
+              delegated Microsoft Graph Mail.ReadWrite access and uses it to create the archived message as an unsent
+              draft in that representative&apos;s Microsoft 365 mailbox. The Service does not request Mail.Send, does not
+              send the message, and does not retain Microsoft access or refresh tokens. The access token is used only
+              during the draft-creation request. Because Microsoft provides Mail.ReadWrite as a mailbox-wide delegated
+              permission, the Microsoft consent screen describes broader mailbox access even though this Service uses
+              it only to create the selected draft.
+            </p>
             <h3>Student issue reports, Microsoft 365 Forms and other submissions</h3>
             <p>Depending on the reporting route or form, we may collect:</p>
             <ul>
@@ -212,6 +221,12 @@ export function PrivacyNotice() {
               Microsoft&apos;s <a href={MICROSOFT_FORMS_PRIVACY_URL}>Security and Privacy in Microsoft Forms</a> information.
               Microsoft&apos;s policies govern Microsoft&apos;s own processing; this notice governs the Team&apos;s access to and
               use of your response.
+            </p>
+            <p>
+              The optional Outlook draft connection also uses the organisational Microsoft identity platform and
+              Microsoft Graph. Microsoft authenticates the representative and processes the archived subject and HTML
+              to place an unsent message in that representative&apos;s Drafts folder. The representative must review the
+              draft and add recipients before sending it from Outlook.
             </p>
             <p>
               The website is delivered through Cloudflare, which may process limited network and security data to serve
@@ -346,7 +361,7 @@ export function PrivacyNotice() {
       </main>
 
       <footer className="policy-footer">
-        <div><strong>Document reference</strong><span>UOM-CHEM-SR-PRIV-001 · Version 1.3</span></div>
+        <div><strong>Document reference</strong><span>UOM-CHEM-SR-PRIV-001 · Version 1.4</span></div>
         <div><strong>Owner</strong><span>Department of Chemistry Student Representatives Team</span></div>
         <div><strong>Copyright</strong><span>&copy; 2026 The University of Manchester Student Representatives Team. Technical support provided by Ziwen M.</span></div>
       </footer>

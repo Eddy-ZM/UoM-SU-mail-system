@@ -29,6 +29,7 @@ import { archiveEmailExport } from "./archiveClient.js";
 import { buildArchiveConfirmationDetails } from "./archiveConfirmation.js";
 import { copyHtmlForOutlook } from "./outlookClipboard.js";
 import { buildOutlookDraft, downloadOutlookDraft } from "./outlookDraft.js";
+import { getOutlookDraftAvailability, openOutlookDraftAuthorisation } from "./outlookGraph.js";
 import {
   clearDraft,
   isDraftExpired,
@@ -220,6 +221,7 @@ export function App({ currentUser }) {
   const [signingOut, setSigningOut] = useState(false);
   const [editorPhase, setEditorPhase] = useState(EDITOR_PHASE.CHOOSER);
   const [archiveReceipt, setArchiveReceipt] = useState(null);
+  const [outlookGraphState, setOutlookGraphState] = useState("idle");
   const [savedDraft, setSavedDraft] = useState(initialDraft.draft);
   const [pendingArchiveOperation, setPendingArchiveOperation] = useState("");
   const [archiveDetailsConfirmed, setArchiveDetailsConfirmed] = useState(false);
@@ -1196,6 +1198,27 @@ export function App({ currentUser }) {
     downloadArchivedOutlookDraft(false);
   }, [downloadArchivedOutlookDraft]);
 
+  useEffect(() => {
+    if (editorPhase !== EDITOR_PHASE.ARCHIVED || archiveReceipt?.operation !== "copy_outlook") {
+      setOutlookGraphState("idle");
+      return undefined;
+    }
+    const controller = new AbortController();
+    setOutlookGraphState("checking");
+    getOutlookDraftAvailability(controller.signal)
+      .then((available) => setOutlookGraphState(available ? "available" : "unavailable"))
+      .catch((error) => {
+        if (error?.name !== "AbortError") setOutlookGraphState("unavailable");
+      });
+    return () => controller.abort();
+  }, [archiveReceipt?.archiveId, archiveReceipt?.operation, editorPhase]);
+
+  const createArchivedOutlookDraft = useCallback(() => {
+    if (editorPhase !== EDITOR_PHASE.ARCHIVED || outlookGraphState !== "available" || !archiveReceipt?.archiveId) return;
+    openOutlookDraftAuthorisation(archiveReceipt.archiveId);
+    showNotice("Complete Microsoft 365 authorisation in the new window. Outlook will open the draft when it is ready.");
+  }, [archiveReceipt?.archiveId, editorPhase, outlookGraphState, showNotice]);
+
   const downloadHtml = async () => {
     const archived = await prepareArchivedExport("download_html");
     if (!archived) return;
@@ -1311,7 +1334,9 @@ export function App({ currentUser }) {
         <ArchivedSession
           user={currentUser}
           receipt={archiveReceipt}
-          onAutoDownloadOutlook={autoDownloadArchivedOutlookDraft}
+          outlookGraphState={outlookGraphState}
+          onCreateOutlookDraft={createArchivedOutlookDraft}
+          onAutoDownloadOutlook={outlookGraphState === "unavailable" ? autoDownloadArchivedOutlookDraft : undefined}
           onDownloadOutlook={redownloadArchivedOutlookDraft}
           onCopyOutlook={copyArchivedForOutlook}
           onCreateEmail={startNewEmail}

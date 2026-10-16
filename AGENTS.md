@@ -15,7 +15,7 @@ When implementing from a selected generated mock, treat that image as the source
 ## Email composition
 
 - New emails default to the `Questionnaire` preset. Its student-facing body copy should sound warm, direct and approachable rather than highly formal, while privacy, verification and institutional footer wording remains formal and unchanged.
-- The immutable archive receipt must show the Outlook subject, automatically download one editable `.eml` draft with the archived HTML and subject prefilled, and tell the user to open it and add recipients. Provide a manual `Download .eml again` button that never triggers automatically more than once per archive, and keep `Copy to Outlook` as a fallback.
+- The immutable archive receipt must show the Outlook subject. When the tenant-scoped Microsoft Graph connection is configured, offer creation of the complete HTML message directly in the representative's Outlook Drafts folder and open the returned Outlook web link; never request `Mail.Send` or send on the user's behalf. Keep `Download .eml` and `Copy to Outlook` as fallbacks. When Graph is unavailable, automatically download one editable `.eml` draft and retain the manual re-download button; never trigger the automatic download more than once per archive.
 
 ## Production access
 
