@@ -18,9 +18,22 @@ import {
 } from "../shared/service-restriction.js";
 
 const STATUS_PATH = "/api/access/status";
+const CANONICAL_ORIGIN = "https://mailsys.uomsu.chemvault.science";
 
 export async function onRequest(context) {
   const requestUrl = new URL(context.request.url);
+
+  if (
+    requestUrl.hostname === "uom-su-mail-system.pages.dev"
+    && (context.request.method === "GET" || context.request.method === "HEAD")
+    && (requestUrl.pathname === "/report" || requestUrl.pathname === "/report/")
+  ) {
+    const canonicalUrl = new URL(`${requestUrl.pathname}${requestUrl.search}`, CANONICAL_ORIGIN);
+    return new Response(null, {
+      status: 308,
+      headers: noStoreHeaders({ location: canonicalUrl.toString() }),
+    });
+  }
 
   if (isPublicRequestPath(requestUrl.pathname) || requestUrl.pathname === STATUS_PATH) {
     return context.next();

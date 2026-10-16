@@ -68,13 +68,27 @@ test("public issue reporting page and submit API bypass the editor authenticatio
   for (const path of ["/report/", "/api/reports"]) {
     let nextCalls = 0;
     const response = await onRequest({
-      request: new Request(`https://uom-su-mail-system.pages.dev${path}`, { method: path.startsWith("/api/") ? "POST" : "GET" }),
+      request: new Request(`https://mailsys.uomsu.chemvault.science${path}`, { method: path.startsWith("/api/") ? "POST" : "GET" }),
       env: {},
       next: async () => { nextCalls += 1; return new Response("public reporting"); },
     });
     assert.equal(nextCalls, 1);
     assert.equal(await response.text(), "public reporting");
   }
+});
+
+test("the legacy pages.dev report address redirects to the canonical public domain", async () => {
+  let nextCalls = 0;
+  const response = await onRequest({
+    request: new Request("https://uom-su-mail-system.pages.dev/report/?source=legacy"),
+    env: {},
+    next: async () => { nextCalls += 1; return new Response("must not render"); },
+  });
+
+  assert.equal(response.status, 308);
+  assert.equal(response.headers.get("location"), "https://mailsys.uomsu.chemvault.science/report/?source=legacy");
+  assert.match(response.headers.get("cache-control") || "", /(?:^|,\s*)no-store(?:,|$)/);
+  assert.equal(nextCalls, 0);
 });
 
 test("an editor request without a local session redirects to User System handoff", async () => {

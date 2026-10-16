@@ -10,6 +10,7 @@ When implementing from a selected generated mock, treat that image as the source
 
 - Include The University of Manchester logo in the email template and its exported/copied output only. Keep the website interface, public pages, access notices and workspace chrome text-only; do not add the University logo to them.
 - Treat the email-only University logo as protected content: deleting it or changing its source, identity attributes or fixed dimensions must trigger recovery, and malformed or core-layout-damaged HTML must not be saved, copied, archived or downloaded.
+- Use `https://mailsys.uomsu.chemvault.science/` as the canonical public origin. Do not expose `pages.dev` URLs in student-facing links; legacy visits to the Pages report URL should redirect to the canonical report page.
 
 ## Email composition
 

@@ -369,7 +369,7 @@ export function getProtectedContentIssues(html, canonicalHtml = "") {
     const verificationCode = safetyFooter.querySelector('[data-verification-code="true"]');
     const footerMessageNumber = safetyFooter.querySelector('[data-message-number-copy="true"]')?.textContent.trim() || "";
     const primaryMessageNumber = brand?.querySelector('[data-message-number="true"]')?.textContent.trim() || "";
-    const verificationLink = safetyFooter.querySelector('a[href="https://uom-su-mail-system.pages.dev/verify/"]');
+    const verificationLink = safetyFooter.querySelector('a[href="https://mailsys.uomsu.chemvault.science/verify/"]');
     const text = safetyFooter.textContent.replace(/\s+/g, " ").trim();
     if (!privacyLink || !verificationCode || footerMessageNumber !== primaryMessageNumber || !verificationLink || !text.includes("Verification code") || !text.includes("contact a Student Representative") || !text.includes("Submitted form responses may be analysed by the Student Representatives Team")) {
       issues.push(PROTECTED_SECTIONS[2].label);
