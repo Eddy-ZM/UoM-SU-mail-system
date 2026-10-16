@@ -478,6 +478,10 @@
   overflow-wrap: anywhere;
 }
 
+.archive-session__receipt .archive-session__subject dd {
+  font-weight: 760;
+}
+
 .archive-session__receipt code {
   font: 700 13px/1.4 "Cascadia Code", Consolas, monospace;
 }

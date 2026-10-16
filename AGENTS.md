@@ -15,6 +15,7 @@ When implementing from a selected generated mock, treat that image as the source
 ## Email composition
 
 - New emails default to the `Questionnaire` preset. Its student-facing body copy should sound warm, direct and approachable rather than highly formal, while privacy, verification and institutional footer wording remains formal and unchanged.
+- The immutable archive receipt must show the Outlook subject and offer an `Open in Outlook` editable `.eml` draft with the archived HTML and subject prefilled; the user should only need to add recipients. Keep `Copy to Outlook` as a fallback.
 
 ## Production access
 

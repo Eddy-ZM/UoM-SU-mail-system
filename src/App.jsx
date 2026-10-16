@@ -28,6 +28,7 @@ import { ReportArchive } from "./ReportArchive.jsx";
 import { archiveEmailExport } from "./archiveClient.js";
 import { buildArchiveConfirmationDetails } from "./archiveConfirmation.js";
 import { copyHtmlForOutlook } from "./outlookClipboard.js";
+import { buildOutlookDraft, downloadOutlookDraft } from "./outlookDraft.js";
 import {
   clearDraft,
   isDraftExpired,
@@ -1153,7 +1154,7 @@ export function App({ currentUser }) {
   const copyForOutlook = async () => {
     const archived = await prepareArchivedExport("copy_outlook");
     if (!archived) return;
-    showNotice(`Email archived as ${archived.messageNumber}. Select Copy to Outlook on the receipt.`);
+    showNotice(`Email archived as ${archived.messageNumber}. Select Open in Outlook on the receipt.`);
   };
 
   const copyArchivedForOutlook = useCallback(async () => {
@@ -1163,6 +1164,21 @@ export function App({ currentUser }) {
       showNotice(`Outlook email copied from backup ${archiveReceipt.messageNumber}`);
     } catch {
       showNotice("Copy was blocked. Select Copy to Outlook and allow clipboard access.");
+    }
+  }, [archiveReceipt, editorPhase, html, showNotice]);
+
+  const openArchivedInOutlook = useCallback(() => {
+    if (editorPhase !== EDITOR_PHASE.ARCHIVED || !archiveReceipt) return;
+    try {
+      const draft = buildOutlookDraft({
+        html,
+        subject: archiveReceipt.subject,
+        messageNumber: archiveReceipt.messageNumber,
+      });
+      downloadOutlookDraft(draft);
+      showNotice("Outlook draft created. Open the downloaded file if Outlook does not launch automatically.");
+    } catch {
+      showNotice("The Outlook draft could not be created. Open the read-only copy and try again.");
     }
   }, [archiveReceipt, editorPhase, html, showNotice]);
 
@@ -1281,6 +1297,7 @@ export function App({ currentUser }) {
         <ArchivedSession
           user={currentUser}
           receipt={archiveReceipt}
+          onOpenOutlook={openArchivedInOutlook}
           onCopyOutlook={copyArchivedForOutlook}
           onCreateEmail={startNewEmail}
           onOpenArchived={openArchivedReceipt}
