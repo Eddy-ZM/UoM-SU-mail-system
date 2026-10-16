@@ -4,6 +4,8 @@ import {
   extractEmbeddedSha256,
   extractMessageNumber,
   extractVerificationCode,
+  hasCompleteEmailDocumentStructure,
+  hasProtectedUniversityLogo,
   isValidMessageNumber,
   isValidVerificationCode,
   sha256Hex,
@@ -57,6 +59,8 @@ export async function createArchive(db, payload, verifiedUser, options = {}) {
   if (!ARCHIVE_OPERATIONS.includes(operation)) throw new ArchiveValidationError("Archive operation is invalid.");
   const html = requiredString(payload.html, "html", MAX_HTML_BYTES);
   if (new TextEncoder().encode(html).byteLength > MAX_HTML_BYTES) throw new ArchiveValidationError("Email HTML is too large.", 413);
+  if (!hasCompleteEmailDocumentStructure(html)) throw new ArchiveValidationError("Email HTML document structure is incomplete or malformed.");
+  if (!hasProtectedUniversityLogo(html)) throw new ArchiveValidationError("The protected University of Manchester logo is missing or altered.");
   const subject = requiredString(payload.subject, "subject", MAX_SUBJECT_LENGTH);
   requiredString(payload.filename, "filename", MAX_FILENAME_LENGTH);
   const preset = typeof payload.preset === "string" ? payload.preset.trim().slice(0, MAX_PRESET_LENGTH) : "custom";

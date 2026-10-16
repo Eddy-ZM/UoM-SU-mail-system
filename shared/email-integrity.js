@@ -13,6 +13,51 @@ const INTEGRITY_METADATA_TAG_RE = /(<!--\s*SRMS-METADATA\s+message-number=")([^"
 const INTEGRITY_METADATA_ANY_RE = /<!--\s*SRMS-METADATA\b[\s\S]*?-->/gi;
 const INTEGRITY_METADATA_PRESENT_RE = /<!--\s*SRMS-METADATA\b/i;
 
+function readHtmlAttribute(tag, name) {
+  const match = String(tag || "").match(new RegExp(`\\s${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`, "i"));
+  return match ? (match[1] ?? match[2] ?? match[3] ?? "") : null;
+}
+
+export function hasCompleteEmailDocumentStructure(html) {
+  if (typeof html !== "string" || !/^\s*<!doctype\s+html[\s>]/i.test(html)) return false;
+  const source = html.replace(/<!--[\s\S]*?-->/g, "");
+  const structuralTags = new Set(["html", "head", "body", "table", "tbody", "tr", "td", "th"]);
+  const requiredTags = new Set(["html", "head", "body"]);
+  const openingCounts = new Map([...requiredTags].map((tag) => [tag, 0]));
+  const closingCounts = new Map([...requiredTags].map((tag) => [tag, 0]));
+  const stack = [];
+
+  for (const match of source.matchAll(/<(\/)?([a-z][a-z0-9-]*)\b[^>]*>/gi)) {
+    const tag = match[2].toLowerCase();
+    if (!structuralTags.has(tag)) continue;
+    if (match[1]) {
+      if (stack.at(-1) !== tag) return false;
+      stack.pop();
+      if (requiredTags.has(tag)) closingCounts.set(tag, closingCounts.get(tag) + 1);
+      continue;
+    }
+    stack.push(tag);
+    if (requiredTags.has(tag)) openingCounts.set(tag, openingCounts.get(tag) + 1);
+  }
+
+  return stack.length === 0 && [...requiredTags].every((tag) => (
+    openingCounts.get(tag) === 1 && closingCounts.get(tag) === 1
+  ));
+}
+
+export function hasProtectedUniversityLogo(html) {
+  const logoTags = [...String(html || "").matchAll(/<img\b[^>]*>/gi)]
+    .map((match) => match[0])
+    .filter((tag) => (readHtmlAttribute(tag, "class") || "").split(/\s+/).includes("university-logo"));
+  if (logoTags.length !== 1) return false;
+  const logo = logoTags[0];
+  const src = (readHtmlAttribute(logo, "src") || "").trim();
+  return /^(?:https:\/\/|cid:|http:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?\/)/i.test(src)
+    && readHtmlAttribute(logo, "alt") === "The University of Manchester"
+    && readHtmlAttribute(logo, "width") === "154"
+    && readHtmlAttribute(logo, "height") === "64";
+}
+
 function replaceSingleTaggedValue(html, pattern, value, fieldName) {
   let matches = 0;
   const next = String(html || "").replace(pattern, (_match, opening, _current, closing) => {

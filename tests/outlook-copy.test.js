@@ -30,15 +30,21 @@ test("the main archive flow requires a fresh user click before Outlook copy", ()
 
 test("the Outlook clipboard fragment materialises text and background colours", () => {
   assert.match(outlookClipboardSource, /createElement\("span"\)/);
-  assert.match(outlookClipboardSource, /span\.style\.setProperty\("color", colour\)/);
+  assert.match(outlookClipboardSource, /INHERITED_TEXT_PROPERTIES/);
+  assert.match(outlookClipboardSource, /"font-size"/);
+  assert.match(outlookClipboardSource, /"line-height"/);
+  assert.match(outlookClipboardSource, /span\.style\.setProperty\(property, presentation\[property\]\)/);
   assert.match(outlookClipboardSource, /font\.setAttribute\("color", colour\)/);
-  assert.match(outlookClipboardSource, /font\.style\.setProperty\("color", colour\)/);
+  assert.match(outlookClipboardSource, /font\.style\.setProperty\(property, presentation\[property\]\)/);
+  assert.match(outlookClipboardSource, /font\.setAttribute\("face", presentation\["font-family"\]\)/);
   assert.match(outlookClipboardSource, /element\.setAttribute\("bgcolor", backgroundColour\)/);
   assert.match(outlookClipboardSource, /"text\/html": new Blob\(\[bodyHtml\]/);
   assert.match(outlookClipboardSource, /"text\/plain": new Blob\(\[plainText\]/);
 });
 
-test("Outlook copy prefers a native rendered selection before raw clipboard HTML", () => {
+test("Outlook copy isolates the materialised fragment before native selection copy", () => {
+  assert.match(outlookClipboardSource, /holder\.style\.all = "initial"/);
+  assert.match(outlookClipboardSource, /holder\.style\.contain = "layout paint style"/);
   assert.match(outlookClipboardSource, /function copyRenderedHtml\(bodyHtml\)/);
   assert.match(outlookClipboardSource, /range\.selectNodeContents\(holder\)/);
   assert.match(outlookClipboardSource, /if \(copyRenderedHtml\(bodyHtml\)\) return "native";/);

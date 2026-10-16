@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createArchive, deleteArchive, listArchives, verifyArchivedMessage } from "../functions/_lib/archive-store.js";
 import { SHA256_PLACEHOLDER, VERIFICATION_CODE_PLACEHOLDER, prepareEmailForArchive } from "../shared/email-integrity.js";
 
-const sourceEmail = `<!doctype html><html><body><span data-message-number="true">CHEM-SR-89ABCDEF</span><p>Archive me</p><span data-verification-code="true">${VERIFICATION_CODE_PLACEHOLDER}</span></body><!-- SRMS-METADATA message-number="CHEM-SR-89ABCDEF" sha256="${SHA256_PLACEHOLDER}" --></html>`;
+const sourceEmail = `<!doctype html><html><head><title>Archive test</title></head><body><img class="university-logo" src="https://example.test/university-of-manchester.png" width="154" height="64" alt="The University of Manchester"><span data-message-number="true">CHEM-SR-89ABCDEF</span><p>Archive me</p><span data-verification-code="true">${VERIFICATION_CODE_PLACEHOLDER}</span></body><!-- SRMS-METADATA message-number="CHEM-SR-89ABCDEF" sha256="${SHA256_PLACEHOLDER}" --></html>`;
 
 function recordingDb({ deleteChanges = 1 } = {}) {
   const calls = [];
@@ -59,6 +59,26 @@ test("a forged embedded hash is rejected before any database write", async () =>
     filename: "update.html",
     operation: "download_html",
   }, { id: "u1", email: "rep@example.test", systemRole: "user" }), /hidden SHA-256 does not match/);
+  assert.equal(db.calls.length, 0);
+});
+
+test("the server rejects malformed HTML and a missing or altered protected University logo", async () => {
+  const db = recordingDb();
+  const withoutLogo = await prepareEmailForArchive(sourceEmail.replace(/<img\b[^>]*>/i, ""));
+  await assert.rejects(() => createArchive(db, {
+    html: withoutLogo.html,
+    subject: "Chemistry update",
+    filename: "update.html",
+    operation: "copy_html",
+  }, { id: "u1", email: "rep@example.test", systemRole: "user" }), /protected University of Manchester logo/);
+
+  const malformed = await prepareEmailForArchive(sourceEmail.replace("</body>", ""));
+  await assert.rejects(() => createArchive(db, {
+    html: malformed.html,
+    subject: "Chemistry update",
+    filename: "update.html",
+    operation: "copy_html",
+  }, { id: "u1", email: "rep@example.test", systemRole: "user" }), /structure is incomplete or malformed/);
   assert.equal(db.calls.length, 0);
 });
 

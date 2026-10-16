@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import initialTemplate from "./templates/student-union-announcement.html?raw";
+import initialTemplateSource from "./templates/student-union-announcement.html?raw";
+import universityLogoUrl from "./assets/university-of-manchester-logo.png?no-inline";
 import {
   CONTENT_BLOCK_TYPES,
   EMAIL_MODULES,
@@ -49,6 +50,14 @@ import {
   setEmbeddedSha256,
   setMessageNumber,
 } from "../shared/email-integrity.js";
+
+const UNIVERSITY_LOGO_SOURCE_PATH = "/src/assets/university-of-manchester-logo.png";
+const DEFAULT_EMAIL_PRESET = getPresetById(DEFAULT_PRESET_ID);
+const brandedTemplate = initialTemplateSource.replaceAll(
+  UNIVERSITY_LOGO_SOURCE_PATH,
+  new URL(universityLogoUrl, window.location.origin).href,
+);
+const initialTemplate = applyEmailPreset(brandedTemplate, DEFAULT_EMAIL_PRESET);
 
 const FONT_FAMILIES = ["Arial", "Verdana", "Tahoma", "Georgia", "Times New Roman"];
 const FONT_SIZES = [12, 14, 16, 18, 22, 28, 34];
@@ -118,13 +127,13 @@ function readSavedDraft(owner) {
   try {
     const saved = readDraft(localStorage, owner);
     if (saved && isUsableEmailHtml(saved.html)) {
-      const restored = getProtectedContentIssues(saved.html).length > 0
+      const restored = getProtectedContentIssues(saved.html, initialTemplate).length > 0
         ? restoreProtectedContent(saved.html, initialTemplate)
         : saved.html;
       const identified = ensureMessageNumber(restored);
       return {
         html: ensureHiddenCredit(normaliseContactNames(identified.html)),
-        subject: saved.subject || "Department of Chemistry Student Representatives | Student Feedback Forum",
+        subject: saved.subject || DEFAULT_EMAIL_PRESET.subject,
         filename: downloadFilenameForMessageNumber(identified.messageNumber),
         preset: saved.preset || DEFAULT_PRESET_ID,
         draft: saved,
@@ -138,7 +147,7 @@ function readSavedDraft(owner) {
   const identified = ensureMessageNumber(initialTemplate, { forceNew: true });
   return {
     html: identified.html,
-    subject: "Department of Chemistry Student Representatives | Student Feedback Forum",
+    subject: DEFAULT_EMAIL_PRESET.subject,
     filename: downloadFilenameForMessageNumber(identified.messageNumber),
     preset: DEFAULT_PRESET_ID,
     draft: null,
@@ -222,7 +231,7 @@ export function App({ currentUser }) {
 
   const metadata = useMemo(() => getEmailMetadata(html), [html]);
   const modules = useMemo(() => getEmailModules(html), [html]);
-  const protectionIssues = useMemo(() => getProtectedContentIssues(html), [html]);
+  const protectionIssues = useMemo(() => getProtectedContentIssues(html, initialTemplate), [html]);
   const layoutIssues = useMemo(() => (
     isUsableEmailHtml(html) && protectionIssues.length === 0
       ? getEmailLayoutIssues(html, initialTemplate)
@@ -317,9 +326,15 @@ export function App({ currentUser }) {
   }, [showNotice, signingOut]);
 
   const saveDraftAndReturnHome = useCallback(() => {
-    const protectedIssues = getProtectedContentIssues(html);
+    const protectedIssues = getProtectedContentIssues(html, initialTemplate);
     if (!canModifyDraft(editorPhase) || !isUsableEmailHtml(html) || protectedIssues.length > 0) {
       showNotice("Restore the protected email structure before saving this draft");
+      return;
+    }
+    const currentLayoutIssues = getEmailLayoutIssues(html, initialTemplate);
+    if (currentLayoutIssues.length > 0) {
+      setLayoutWarningOpen(true);
+      showNotice("Repair the core email layout before saving this draft");
       return;
     }
     try {
@@ -381,7 +396,7 @@ export function App({ currentUser }) {
     setHtml(identified.html);
     setPreviewHtml(identified.html);
     lastLayoutSafeHtmlRef.current = identified.html;
-    setSubject("Department of Chemistry Student Representatives | Student Feedback Forum");
+    setSubject(DEFAULT_EMAIL_PRESET.subject);
     setFilename(downloadFilenameForMessageNumber(identified.messageNumber));
     setActivePreset(DEFAULT_PRESET_ID);
     setCodeError("");
@@ -458,7 +473,7 @@ export function App({ currentUser }) {
 
   useEffect(() => {
     if (!canModifyDraft(editorPhase)) return undefined;
-    if (!isUsableEmailHtml(html) || protectionIssues.length > 0) {
+    if (!isUsableEmailHtml(html) || protectionIssues.length > 0 || layoutIssues.length > 0) {
       setSaveState("Recovery required");
       return undefined;
     }
@@ -478,7 +493,7 @@ export function App({ currentUser }) {
       }
     }, 500);
     return () => window.clearTimeout(timer);
-  }, [activePreset, draftOwner, editorPhase, filename, html, protectionIssues.length, subject]);
+  }, [activePreset, draftOwner, editorPhase, filename, html, layoutIssues.length, protectionIssues.length, subject]);
 
   useEffect(() => {
     if (!canModifyDraft(editorPhase)) return undefined;
@@ -499,7 +514,7 @@ export function App({ currentUser }) {
         setSyncState("HTML needs attention");
         return;
       }
-      const protectedIssues = getProtectedContentIssues(html);
+      const protectedIssues = getProtectedContentIssues(html, initialTemplate);
       if (protectedIssues.length > 0) {
         setCodeError(`Protected Manchester content cannot be removed: ${protectedIssues.join(", ")}.`);
         setSyncState("Protected content must be restored");
@@ -985,7 +1000,7 @@ export function App({ currentUser }) {
     const next = event.target.value;
     updateOrigin.current = "code";
     setHtml(next);
-    const issues = getProtectedContentIssues(next);
+    const issues = getProtectedContentIssues(next, initialTemplate);
     if (issues.length > 0) {
       setCodeError(`Protected Manchester content cannot be removed: ${issues.join(", ")}.`);
       setSyncState("Protected content must be restored");
@@ -1001,7 +1016,7 @@ export function App({ currentUser }) {
       } catch {
         restored = ensureMessageNumber(restored).html;
       }
-      return getProtectedContentIssues(restored).length === 0 ? restored : null;
+      return getProtectedContentIssues(restored, initialTemplate).length === 0 ? restored : null;
     };
     const next = restoreCandidate(html)
       || restoreCandidate(previewHtml)
@@ -1036,12 +1051,19 @@ export function App({ currentUser }) {
 
   const exportIsAllowed = useCallback(() => {
     if (!canModifyDraft(editorPhase) || archiveLockRef.current) return false;
-    const issues = getProtectedContentIssues(html);
+    const issues = getProtectedContentIssues(html, initialTemplate);
     if (!isUsableEmailHtml(html) || issues.length > 0) {
       setCodeError(issues.length > 0
         ? `Protected Manchester content cannot be removed: ${issues.join(", ")}.`
         : "Keep a complete <html> document containing .email-shell. The last valid preview is still shown.");
       showNotice("Restore the protected Manchester content before exporting");
+      return false;
+    }
+    const currentLayoutIssues = getEmailLayoutIssues(html, initialTemplate);
+    if (currentLayoutIssues.length > 0) {
+      setLayoutWarningOpen(true);
+      setLayoutWarningDismissed(false);
+      showNotice("Repair the core email layout before exporting");
       return false;
     }
     return true;
@@ -1173,7 +1195,7 @@ export function App({ currentUser }) {
     setHtml(identified.html);
     setPreviewHtml(identified.html);
     lastLayoutSafeHtmlRef.current = identified.html;
-    setSubject("Department of Chemistry Student Representatives | Student Feedback Forum");
+    setSubject(DEFAULT_EMAIL_PRESET.subject);
     setFilename(downloadFilenameForMessageNumber(identified.messageNumber));
     setActivePreset(DEFAULT_PRESET_ID);
     setCodeError("");
@@ -1266,12 +1288,12 @@ export function App({ currentUser }) {
           </button>
         </div>
         <div className="header-actions">
-          <AppButton className="secondary-on-dark" onClick={saveDraftAndReturnHome} disabled={Boolean(exportBusy || codeError || protectionIssues.length)} title="Save this email as a draft and return home">Home</AppButton>
+          <AppButton className="secondary-on-dark" onClick={saveDraftAndReturnHome} disabled={Boolean(exportBusy || codeError || protectionIssues.length || layoutIssues.length)} title="Save this email as a draft and return home">Home</AppButton>
           <AppButton className="secondary-on-dark" onClick={openArchiveSearch}>Backups</AppButton>
           <AppButton className="secondary-on-dark" onClick={resetTemplate}>Reset</AppButton>
-          <AppButton className="secondary-on-dark" onClick={() => requestArchiveConfirmation("copy_html")} disabled={Boolean(exportBusy || codeError || protectionIssues.length)}>{exportBusy === "copy_html" ? "Archiving..." : "Copy HTML"}</AppButton>
-          <AppButton className="primary" onClick={() => requestArchiveConfirmation("copy_outlook")} disabled={Boolean(exportBusy || codeError || protectionIssues.length)}>{exportBusy === "copy_outlook" ? "Archiving..." : "Copy for Outlook"}</AppButton>
-          <AppButton className="primary-light" onClick={() => requestArchiveConfirmation("download_html")} disabled={Boolean(exportBusy || codeError || protectionIssues.length)}>{exportBusy === "download_html" ? "Archiving..." : "Download HTML"}</AppButton>
+          <AppButton className="secondary-on-dark" onClick={() => requestArchiveConfirmation("copy_html")} disabled={Boolean(exportBusy || codeError || protectionIssues.length || layoutIssues.length)}>{exportBusy === "copy_html" ? "Archiving..." : "Copy HTML"}</AppButton>
+          <AppButton className="primary" onClick={() => requestArchiveConfirmation("copy_outlook")} disabled={Boolean(exportBusy || codeError || protectionIssues.length || layoutIssues.length)}>{exportBusy === "copy_outlook" ? "Archiving..." : "Copy for Outlook"}</AppButton>
+          <AppButton className="primary-light" onClick={() => requestArchiveConfirmation("download_html")} disabled={Boolean(exportBusy || codeError || protectionIssues.length || layoutIssues.length)}>{exportBusy === "download_html" ? "Archiving..." : "Download HTML"}</AppButton>
         </div>
       </header>
 

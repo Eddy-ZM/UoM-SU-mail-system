@@ -7,19 +7,21 @@ export const EMAIL_PRESETS = [
     filename: "manchester-chemistry-student-questionnaire.html",
     modules: { details: false, keyPoints: true, cta: true, followUp: true, contacts: true },
     content: {
+      salutation: "Hi everyone,",
+      signoff: ["Thanks again,", "Your Student Representatives", "Department of Chemistry", "The University of Manchester"],
       category: "STUDENT FEEDBACK · QUESTIONNAIRE",
-      headline: "Tell us about your Chemistry experience",
-      summary: "Your feedback helps us represent students and raise shared priorities with the Department of Chemistry.",
-      introPrimary: "The Department of Chemistry Student Representatives are inviting you to complete a short questionnaire about your experience of teaching, learning resources, facilities and student support.",
-      introSecondary: "Your responses will help us identify recurring themes and prepare evidence-based feedback for departmental discussions. Please avoid including sensitive personal information or details that identify another person.",
-      keyPointsHeading: "Why take part?",
+      headline: "How is your Chemistry experience going?",
+      summary: "Got a few minutes? Tell us what is working well and what could be better for Chemistry students.",
+      introPrimary: "We would really like to hear how things are going for you. This short questionnaire is a chance to tell us about teaching, learning resources, facilities and student support.",
+      introSecondary: "We will look for themes across the responses and use them when we speak with the Department. You can be honest, but please do not include sensitive personal information or details that identify someone else.",
+      keyPointsHeading: "A few reasons to take part",
       keyPoints: [
-        ["Quick to complete", "The questionnaire should take only a few minutes."],
-        ["Student-led", "Responses will be reviewed by the Student Representatives."],
-        ["Focused on action", "We will use recurring themes to raise priorities and request follow-up where appropriate."],
+        ["It is quick", "It should only take a few minutes to complete."],
+        ["We are listening", "Your Student Representatives will read the responses and bring together the main themes."],
+        ["It helps us act", "Your feedback helps us focus on the changes that matter most to students."],
       ],
-      buttonLabel: "Complete the questionnaire →",
-      followUp: "Thank you for taking the time to share your views. If the button does not open, contact either Student Representative below for the questionnaire link.",
+      buttonLabel: "Share your feedback →",
+      followUp: "Thanks for sharing your thoughts — we really appreciate it. If the button does not open, just email either Student Representative below and we will send you the link.",
       facts: [
         ["CLOSES", "See the closing date shown on the questionnaire"],
         ["TIME NEEDED", "A few minutes"],
@@ -146,7 +148,7 @@ export const EMAIL_PRESETS = [
   },
 ];
 
-export const DEFAULT_PRESET_ID = "event";
+export const DEFAULT_PRESET_ID = "survey";
 
 export function getPresetById(id) {
   return EMAIL_PRESETS.find((preset) => preset.id === id) || EMAIL_PRESETS.find((preset) => preset.id === DEFAULT_PRESET_ID);

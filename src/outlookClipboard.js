@@ -1,6 +1,18 @@
 const TEXT_NODE = 3;
 const ELEMENT_NODE = 1;
 const OUTLOOK_BACKGROUND_ELEMENTS = new Set(["TABLE", "TD", "TH"]);
+const INHERITED_TEXT_PROPERTIES = [
+  "color",
+  "font-family",
+  "font-size",
+  "font-style",
+  "font-weight",
+  "letter-spacing",
+  "line-height",
+  "text-align",
+  "text-decoration",
+  "white-space",
+];
 
 function normaliseOutlookColour(value) {
   const colour = String(value || "").trim().toLowerCase();
@@ -17,16 +29,26 @@ function normaliseOutlookColour(value) {
   return `#${rgb.slice(1, 4).map((part) => Math.min(255, Number(part)).toString(16).padStart(2, "0")).join("")}`;
 }
 
-function materialiseElementColours(element, inheritedColour = "") {
+function materialiseElementPresentation(element, inheritedPresentation = {}) {
   const inlineColour = element.style?.getPropertyValue("color") || "";
   const hasTransparentColour = inlineColour.trim().toLowerCase() === "transparent";
   const colour = hasTransparentColour
     ? ""
-    : normaliseOutlookColour(inlineColour) || inheritedColour;
+    : normaliseOutlookColour(inlineColour) || inheritedPresentation.color || "";
+
+  const presentation = Object.fromEntries(INHERITED_TEXT_PROPERTIES.map((property) => {
+    if (property === "color") return [property, colour];
+    return [property, element.style?.getPropertyValue(property) || inheritedPresentation[property] || ""];
+  }));
 
   if (colour) {
     element.style.setProperty("color", colour);
     if (element.tagName === "FONT") element.setAttribute("color", colour);
+  }
+  for (const property of INHERITED_TEXT_PROPERTIES) {
+    if (property !== "color" && presentation[property]) {
+      element.style.setProperty(property, presentation[property]);
+    }
   }
 
   const backgroundColour = normaliseOutlookColour(
@@ -45,16 +67,20 @@ function materialiseElementColours(element, inheritedColour = "") {
       // Word-based Outlook versions may discard either inherited CSS or one of
       // these representations while converting clipboard HTML.
       const span = element.ownerDocument.createElement("span");
-      span.style.setProperty("color", colour);
       const font = element.ownerDocument.createElement("font");
+      for (const property of INHERITED_TEXT_PROPERTIES) {
+        if (!presentation[property]) continue;
+        span.style.setProperty(property, presentation[property]);
+        font.style.setProperty(property, presentation[property]);
+      }
       font.setAttribute("color", colour);
-      font.style.setProperty("color", colour);
+      if (presentation["font-family"]) font.setAttribute("face", presentation["font-family"]);
       node.replaceWith(span);
       span.appendChild(font);
       font.appendChild(node);
       continue;
     }
-    if (node.nodeType === ELEMENT_NODE) materialiseElementColours(node, colour);
+    if (node.nodeType === ELEMENT_NODE) materialiseElementPresentation(node, presentation);
   }
 }
 
@@ -63,11 +89,14 @@ function copyRenderedHtml(bodyHtml) {
   holder.innerHTML = bodyHtml;
   holder.setAttribute("contenteditable", "true");
   holder.setAttribute("aria-hidden", "true");
+  holder.style.all = "initial";
   holder.style.position = "fixed";
   holder.style.left = "-10000px";
   holder.style.top = "0";
+  holder.style.display = "block";
   holder.style.width = "800px";
   holder.style.background = "#ffffff";
+  holder.style.contain = "layout paint style";
   document.body.appendChild(holder);
 
   const previousFocus = document.activeElement;
@@ -97,7 +126,7 @@ function copyRenderedHtml(bodyHtml) {
 
 export function prepareOutlookClipboardContent(html) {
   const parsed = new DOMParser().parseFromString(html, "text/html");
-  materialiseElementColours(parsed.body);
+  materialiseElementPresentation(parsed.body);
   return {
     bodyHtml: parsed.body.innerHTML,
     plainText: parsed.body.innerText.replace(/\n{3,}/g, "\n\n").trim(),

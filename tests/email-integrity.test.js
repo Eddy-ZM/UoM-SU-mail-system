@@ -11,6 +11,8 @@ import {
   extractIntegrityMetadata,
   extractMessageNumber,
   extractVerificationCode,
+  hasCompleteEmailDocumentStructure,
+  hasProtectedUniversityLogo,
   prepareEmailForArchive,
   sha256Hex,
   verificationCodeFromSha256,
@@ -70,6 +72,17 @@ test("integrity helpers reject missing or duplicate protected fields", async () 
   await assert.rejects(() => prepareEmailForArchive(baseEmail.replace("data-verification-code", "data-removed-code")), /exactly one verification code/);
   await assert.rejects(() => prepareEmailForArchive(baseEmail.replace(/<!-- SRMS-METADATA[\s\S]*?-->/, "")), /hidden integrity metadata/);
   assert.throws(() => extractMessageNumber(baseEmail.replace("</body>", '<span data-message-number="true">CHEM-SR-FFFFFFFF</span></body>')), /exactly one message number/);
+});
+
+test("document and University-logo integrity helpers reject malformed or altered source", () => {
+  const logo = '<img class="university-logo" src="https://example.test/uom.png" width="154" height="64" alt="The University of Manchester">';
+  const document = `<!doctype html><html><head><title>Test</title></head><body><table><tbody><tr><td>${logo}</td></tr></tbody></table></body></html>`;
+  assert.equal(hasCompleteEmailDocumentStructure(document), true);
+  assert.equal(hasCompleteEmailDocumentStructure(document.replace("</td></tr>", "</tr></td>")), false);
+  assert.equal(hasProtectedUniversityLogo(document), true);
+  assert.equal(hasProtectedUniversityLogo(document.replace(logo, "")), false);
+  assert.equal(hasProtectedUniversityLogo(document.replace('width="154"', 'width="153"')), false);
+  assert.equal(hasProtectedUniversityLogo(document.replace("The University of Manchester", "Manchester")), false);
 });
 
 test("the production initial template can generate a message number and archive verification code", async () => {

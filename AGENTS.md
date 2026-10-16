@@ -6,6 +6,15 @@ Before making substantial visual changes, use the Product Design plugin's `get-c
 
 When implementing from a selected generated mock, treat that image as the source of truth for layout, component anatomy, density, spacing, color, typography, visible content, and hierarchy.
 
+## Branding
+
+- Include The University of Manchester logo in the email template and its exported/copied output only. Keep the website interface, public pages, access notices and workspace chrome text-only; do not add the University logo to them.
+- Treat the email-only University logo as protected content: deleting it or changing its source, identity attributes or fixed dimensions must trigger recovery, and malformed or core-layout-damaged HTML must not be saved, copied, archived or downloaded.
+
+## Email composition
+
+- New emails default to the `Questionnaire` preset. Its student-facing body copy should sound warm, direct and approachable rather than highly formal, while privacy, verification and institutional footer wording remains formal and unchanged.
+
 ## Production access
 
 - Keep service entry and in-service content access as separate permissions. `service:uom-su-mail-system:access` alone controls whether a signed-in user may enter the service; preserve its existing assignments and meaning.

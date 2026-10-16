@@ -5,20 +5,24 @@ import { hasCompleteEmailDocumentStructure } from "../src/emailUtils.js";
 
 const template = readFileSync(new URL("../src/templates/student-union-announcement.html", import.meta.url), "utf8");
 const emailUtilsSource = readFileSync(new URL("../src/emailUtils.js", import.meta.url), "utf8");
+const appSource = readFileSync(new URL("../src/App.jsx", import.meta.url), "utf8");
 
 test("the production email template has a complete balanced document structure", () => {
   assert.equal(hasCompleteEmailDocumentStructure(template), true);
 });
 
-test("the protected email header uses the text-only department identity", () => {
+test("the protected email header includes the University logo and department identity", () => {
   const header = template.match(/<tr data-protected-section="brand-header">[\s\S]*?<\/tr>\s*<tr>/)?.[0] || "";
+  assert.match(header, /class="university-logo"/);
+  assert.match(header, /src="\/src\/assets\/university-of-manchester-logo\.png"/);
+  assert.match(header, /width="154" height="64" alt="The University of Manchester"/);
   assert.match(header, /class="department-label"/);
   assert.match(header, /class="department-name">Department of Chemistry<\/span><br><span class="representative-name"[^>]*>Student Representatives<\/span>/);
-  assert.doesNotMatch(header, /<img\b/i);
   assert.doesNotMatch(template, /assets\.manchester\.ac\.uk\/logos/);
-  assert.match(emailUtilsSource, /Department identity and message details/);
+  assert.match(emailUtilsSource, /University logo, department identity and message details/);
   assert.match(emailUtilsSource, /\.department-label \.department-name/);
   assert.match(emailUtilsSource, /\.department-label \.representative-name/);
+  assert.match(emailUtilsSource, /img\.university-logo\[alt="The University of Manchester"\]/);
 });
 
 test("the template and newly added components use the compact 12-pixel body scale", () => {
@@ -52,4 +56,11 @@ test("missing, duplicated or crossed structural tags are rejected", () => {
   assert.equal(hasCompleteEmailDocumentStructure(template.replace("<body ", "<body><body ")), false);
   assert.equal(hasCompleteEmailDocumentStructure(template.replace("</td></tr>", "</tr></td>")), false);
   assert.equal(hasCompleteEmailDocumentStructure(template.replace("</table>", "")), false);
+});
+
+test("saving and exporting are gated by canonical protected content and core layout integrity", () => {
+  assert.match(appSource, /getProtectedContentIssues\(html, initialTemplate\)/);
+  assert.match(appSource, /protectionIssues\.length > 0 \|\| layoutIssues\.length > 0/);
+  assert.match(appSource, /const currentLayoutIssues = getEmailLayoutIssues\(html, initialTemplate\);[\s\S]*?Repair the core email layout before exporting/);
+  assert.match(appSource, /protectionIssues\.length \|\| layoutIssues\.length/);
 });
