@@ -25,6 +25,8 @@ import {
 import { DEFAULT_PRESET_ID, EMAIL_PRESETS, getPresetById } from "./emailPresets.js";
 import { ArchivePanel } from "./ArchivePanel.jsx";
 import { ReportArchive } from "./ReportArchive.jsx";
+import { AuditLog } from "./AuditLog.jsx";
+import { currentAuditSessionId, recordAuditAction, useAuditSession, useMobileEditorBlocked } from "./auditClient.js";
 import { archiveEmailExport } from "./archiveClient.js";
 import { buildArchiveConfirmationDetails } from "./archiveConfirmation.js";
 import { copyHtmlForOutlook } from "./outlookClipboard.js";
@@ -191,6 +193,8 @@ function AppButton({ className = "", children, ...props }) {
 }
 
 export function App({ currentUser }) {
+  useAuditSession();
+  const mobileEditorBlocked = useMobileEditorBlocked();
   const draftOwner = useMemo(
     () => String(currentUser?.email || currentUser?.id || "").trim().toLowerCase(),
     [currentUser?.email, currentUser?.id],
@@ -216,6 +220,7 @@ export function App({ currentUser }) {
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [reportArchiveOpen, setReportArchiveOpen] = useState(false);
+  const [auditLogOpen, setAuditLogOpen] = useState(false);
   const [archiveInitialId, setArchiveInitialId] = useState("");
   const [exportBusy, setExportBusy] = useState("");
   const [signingOut, setSigningOut] = useState(false);
@@ -314,6 +319,13 @@ export function App({ currentUser }) {
     if (signingOut) return;
     setSigningOut(true);
     try {
+      await fetch("/api/audit/session", {
+        method: "POST",
+        credentials: "same-origin",
+        keepalive: true,
+        headers: { "content-type": "application/json", accept: "application/json" },
+        body: JSON.stringify({ sessionId: currentAuditSessionId(), state: "logout" }),
+      }).catch(() => undefined);
       const response = await fetch("/api/access/logout", {
         method: "POST",
         credentials: "same-origin",
@@ -366,6 +378,10 @@ export function App({ currentUser }) {
   }, [activePreset, draftOwner, editorPhase, filename, html, showNotice, subject]);
 
   const resumeSavedDraft = useCallback(() => {
+    if (mobileEditorBlocked) {
+      showNotice("Email editing is available on desktop browsers only");
+      return;
+    }
     if (!savedDraft || isDraftExpired(savedDraft)) {
       try {
         clearDraft(localStorage, draftOwner);
@@ -377,8 +393,9 @@ export function App({ currentUser }) {
       return;
     }
     setEditorPhase(EDITOR_PHASE.EDITING);
+    recordAuditAction("composer.resumed");
     setSyncState("Saved draft reopened");
-  }, [draftOwner, savedDraft, showNotice]);
+  }, [draftOwner, mobileEditorBlocked, savedDraft, showNotice]);
 
   const deleteSavedDraft = useCallback(() => {
     if (!savedDraft || !window.confirm("Delete this saved draft? This cannot be undone.")) return;
@@ -388,10 +405,15 @@ export function App({ currentUser }) {
       // Removing the in-memory record still hides the draft for this session.
     }
     setSavedDraft(null);
+    recordAuditAction("draft.deleted");
     showNotice("Draft deleted");
   }, [draftOwner, savedDraft, showNotice]);
 
   const startNewEmail = useCallback(() => {
+    if (mobileEditorBlocked) {
+      showNotice("Email editing is available on desktop browsers only");
+      return;
+    }
     if (savedDraft && !window.confirm("Create a new email and delete the current saved draft?")) return;
     const identified = ensureMessageNumber(initialTemplate, { forceNew: true });
     archiveLockRef.current = false;
@@ -412,22 +434,32 @@ export function App({ currentUser }) {
     setSavedDraft(null);
     setSyncState("Visual and HTML are in sync");
     setEditorPhase(EDITOR_PHASE.EDITING);
+    recordAuditAction("composer.opened");
     try {
       clearDraft(localStorage, draftOwner);
     } catch {
       // A blocked local store must not prevent creation of a fresh email.
     }
-  }, [draftOwner, savedDraft]);
+  }, [draftOwner, mobileEditorBlocked, savedDraft, showNotice]);
 
   const openArchiveSearch = useCallback(() => {
     setArchiveInitialId("");
     setArchiveOpen(true);
+    recordAuditAction("archive.opened");
   }, []);
 
   const openReportArchive = useCallback(() => {
     setArchiveOpen(false);
     setArchiveInitialId("");
     setReportArchiveOpen(true);
+    recordAuditAction("reports.opened");
+  }, []);
+
+  const openAuditLog = useCallback(() => {
+    setArchiveOpen(false);
+    setReportArchiveOpen(false);
+    setAuditLogOpen(true);
+    recordAuditAction("audit.opened");
   }, []);
 
   const openArchivedReceipt = useCallback(() => {
@@ -445,10 +477,13 @@ export function App({ currentUser }) {
     setReportArchiveOpen(false);
   }, []);
 
+  const closeAuditLog = useCallback(() => setAuditLogOpen(false), []);
+
   const returnHome = useCallback(() => {
     setArchiveReceipt(null);
     setArchiveOpen(false);
     setReportArchiveOpen(false);
+    setAuditLogOpen(false);
     setArchiveInitialId("");
     setEditorPhase(EDITOR_PHASE.CHOOSER);
   }, []);
@@ -1275,6 +1310,17 @@ export function App({ currentUser }) {
     return <ArchiveProgress user={currentUser} />;
   }
 
+  if (auditLogOpen) {
+    return (
+      <>
+        <ArchiveWorkspace user={currentUser} onLogout={signOut} isLoggingOut={signingOut}>
+          <AuditLog onClose={closeAuditLog} />
+        </ArchiveWorkspace>
+        {notice && <div className="toast" role="status" aria-live="polite">{notice}</div>}
+      </>
+    );
+  }
+
   if (reportArchiveOpen) {
     return (
       <>
@@ -1320,6 +1366,8 @@ export function App({ currentUser }) {
           onDeleteDraft={deleteSavedDraft}
           onSearchArchive={openArchiveSearch}
           onOpenReportArchive={openReportArchive}
+          onOpenAuditLog={openAuditLog}
+          editorUnavailable={mobileEditorBlocked}
           onLogout={signOut}
           isLoggingOut={signingOut}
         />
@@ -1348,6 +1396,19 @@ export function App({ currentUser }) {
         />
         {notice && <div className="toast" role="status" aria-live="polite">{notice}</div>}
       </>
+    );
+  }
+
+  if (mobileEditorBlocked && canModifyDraft(editorPhase)) {
+    return (
+      <main className="workspace-chooser archive-session">
+        <section className="archive-session__content" aria-labelledby="mobile-editor-title">
+          <p className="archive-session__eyebrow">Desktop browser required</p>
+          <h1 id="mobile-editor-title">Email editing is unavailable on mobile</h1>
+          <p>Your saved draft remains protected in this browser. Return on a desktop-sized browser to continue editing.</p>
+          <div className="archive-session__actions"><button className="archive-session__primary" type="button" onClick={returnHome}>Back to workspace</button></div>
+        </section>
+      </main>
     );
   }
 

@@ -66,7 +66,7 @@ export function PrivacyNotice() {
             <tbody>
               <tr><th scope="row">Document owner</th><td>Department of Chemistry Student Representatives Team</td><th scope="row">Reference</th><td>UOM-CHEM-SR-PRIV-001</td></tr>
               <tr><th scope="row">Effective date</th><td>1 July 2026</td><th scope="row">Last reviewed</th><td>17 October 2026</td></tr>
-              <tr><th scope="row">Version</th><td>1.4</td><th scope="row">Next review</th><td>By 1 July 2027</td></tr>
+              <tr><th scope="row">Version</th><td>1.5</td><th scope="row">Next review</th><td>By 1 July 2027</td></tr>
             </tbody>
           </table>
         </div>
@@ -142,6 +142,14 @@ export function PrivacyNotice() {
               If that backup cannot be created, the copy or download does not proceed. Hosting and security providers
               may also process ordinary request information such as IP address, browser type, request time and requested
               page for delivery, security and abuse prevention.
+            </p>
+            <p>
+              The Service also keeps a restricted system activity log for accountability and security. It records the
+              authenticated account, action, result, time, session identifier and limited request information. A recent
+              heartbeat is used to show whether a session is online; an inactive state is an estimate when a browser is
+              closed or loses its connection. These logs do not contain email bodies or subjects, student report text,
+              cookies, authentication tokens or Microsoft authorisation codes, and the log viewer is restricted to the
+              system owner.
             </p>
             <p>
               Where an authorised representative chooses the optional Outlook draft connection, the Service requests
@@ -361,7 +369,7 @@ export function PrivacyNotice() {
       </main>
 
       <footer className="policy-footer">
-        <div><strong>Document reference</strong><span>UOM-CHEM-SR-PRIV-001 · Version 1.4</span></div>
+        <div><strong>Document reference</strong><span>UOM-CHEM-SR-PRIV-001 · Version 1.5</span></div>
         <div><strong>Owner</strong><span>Department of Chemistry Student Representatives Team</span></div>
         <div><strong>Copyright</strong><span>&copy; 2026 The University of Manchester Student Representatives Team. Technical support provided by Ziwen M.</span></div>
       </footer>

@@ -6,6 +6,7 @@ import {
   jsonResponse,
   REQUIRED_PERMISSION,
 } from "../../_lib/access-gate.js";
+import { isAuditOwner } from "../../_lib/audit-store.js";
 
 export async function onRequestGet({ request, env }) {
   const decision = await checkRequestAccess(request, env);
@@ -18,7 +19,10 @@ export async function onRequestGet({ request, env }) {
       permission: REQUIRED_PERMISSION,
       contentAllowed: true,
       contentPermission: FULL_ACCESS_PERMISSION,
-      user: decision.user,
+      user: {
+        ...decision.user,
+        capabilities: { auditLog: isAuditOwner(decision.user) },
+      },
     });
   }
 

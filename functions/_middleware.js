@@ -16,6 +16,7 @@ import {
   SERVICE_ENTRY_DENIED_MESSAGE,
   SERVICE_ENTRY_DENIED_TITLE,
 } from "../shared/service-restriction.js";
+import { bestEffortAudit, recordAuditEvent } from "./_lib/audit-store.js";
 
 const STATUS_PATH = "/api/access/status";
 const CANONICAL_ORIGIN = "https://mailsys.uomsu.chemvault.science";
@@ -43,6 +44,13 @@ export async function onRequest(context) {
   if (callbackToken) {
     const callbackDecision = await verifyHandoffAccess(callbackToken, context.request, context.env);
     if (callbackDecision.kind === "allowed" || (callbackDecision.kind === "restricted" && callbackDecision.handoffExpiresAt)) {
+      bestEffortAudit(context, recordAuditEvent(context.env.ARCHIVE_DB, callbackDecision.user, {
+        category: "authentication",
+        action: "auth.handoff_completed",
+        outcome: callbackDecision.kind === "allowed" ? "success" : "denied",
+        method: context.request.method,
+        path: requestUrl.pathname,
+      }));
       return new Response(null, {
         status: 303,
         headers: noStoreHeaders({
@@ -114,6 +122,20 @@ export async function onRequest(context) {
 
   if (context.data) context.data.mailAccess = decision;
   const response = await context.next();
+  if (
+    requestUrl.pathname.startsWith("/api/")
+    && !requestUrl.pathname.startsWith("/api/audit/")
+    && !requestUrl.pathname.startsWith("/api/admin/audit-logs")
+  ) {
+    bestEffortAudit(context, recordAuditEvent(context.env.ARCHIVE_DB, decision.user, {
+      category: "request",
+      action: "request.completed",
+      outcome: response.status < 400 ? "success" : response.status === 403 ? "denied" : "failure",
+      method: context.request.method,
+      path: requestUrl.pathname,
+      httpStatus: response.status,
+    }));
+  }
   const headers = new Headers(response.headers);
   for (const [name, value] of noStoreHeaders()) headers.set(name, value);
   return new Response(response.body, {

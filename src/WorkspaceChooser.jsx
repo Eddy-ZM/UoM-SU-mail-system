@@ -79,6 +79,8 @@ export function WorkspaceChooser({
   onDeleteDraft,
   onSearchArchive,
   onOpenReportArchive,
+  onOpenAuditLog,
+  editorUnavailable = false,
   onLogout,
   logoutSlot = null,
   isLoggingOut = false,
@@ -109,17 +111,17 @@ export function WorkspaceChooser({
               </dl>
             </div>
             <div className="workspace-draft__actions">
-              <button type="button" onClick={onResumeDraft}>Continue editing</button>
+              <button type="button" onClick={onResumeDraft} disabled={editorUnavailable}>Continue editing</button>
               <button type="button" onClick={onDeleteDraft}>Delete draft</button>
             </div>
           </section>
         )}
 
         <div className="workspace-chooser__actions" aria-label="Representative workspace actions">
-          <button className="workspace-action workspace-action--primary" type="button" onClick={onCreateEmail}>
+          <button className="workspace-action workspace-action--primary" type="button" onClick={onCreateEmail} disabled={editorUnavailable}>
             <span className="workspace-action__copy">
               <strong>Create a new email</strong>
-              <small>Start with an approved announcement template.</small>
+              <small>{editorUnavailable ? "Email editing is available on desktop browsers only." : "Start with an approved announcement template."}</small>
             </span>
           </button>
 
@@ -136,6 +138,15 @@ export function WorkspaceChooser({
               <small>View submitted reports and follow-up requests.</small>
             </span>
           </button>
+
+          {user?.capabilities?.auditLog && (
+            <button className="workspace-action workspace-action--admin" type="button" onClick={onOpenAuditLog}>
+              <span className="workspace-action__copy">
+                <strong>System logs</strong>
+                <small>Open the owner-only activity and session monitor.</small>
+              </span>
+            </button>
+          )}
         </div>
 
         <section className="workspace-public" aria-labelledby="workspace-public-title">
