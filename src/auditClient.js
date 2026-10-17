@@ -1,14 +1,25 @@
 import { useEffect, useState } from "react";
 
 const SESSION_KEY = "uom_su_mail_audit_session";
+let volatileSessionId = "";
+
+function randomId() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return `session-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
 
 function sessionId() {
-  let value = sessionStorage.getItem(SESSION_KEY);
-  if (!value) {
-    value = crypto.randomUUID();
-    sessionStorage.setItem(SESSION_KEY, value);
+  try {
+    let value = sessionStorage.getItem(SESSION_KEY);
+    if (!value) {
+      value = randomId();
+      sessionStorage.setItem(SESSION_KEY, value);
+    }
+    return value;
+  } catch {
+    if (!volatileSessionId) volatileSessionId = randomId();
+    return volatileSessionId;
   }
-  return value;
 }
 
 async function post(path, body, keepalive = false) {
@@ -41,7 +52,7 @@ export function useAuditSession() {
 export function recordAuditAction(action) {
   try {
     void post("/api/audit/events", {
-      eventId: crypto.randomUUID(),
+      eventId: randomId(),
       sessionId: sessionId(),
       action,
     }, true).catch(() => undefined);
