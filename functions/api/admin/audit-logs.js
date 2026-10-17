@@ -9,6 +9,8 @@ export async function onRequestGet(context) {
     const result = await listAuditLog(context.env.ARCHIVE_DB, {
       q: url.searchParams.get("q"), action: url.searchParams.get("action"),
       outcome: url.searchParams.get("outcome"), limit: url.searchParams.get("limit"), offset: url.searchParams.get("offset"),
+      category: url.searchParams.get("category"), actorEmail: url.searchParams.get("actorEmail"),
+      since: url.searchParams.get("since"),
     });
     return jsonResponse(result);
   } catch {

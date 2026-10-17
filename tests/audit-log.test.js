@@ -45,3 +45,13 @@ test("the workspace gates the editor on mobile and exposes owner-only system log
   assert.doesNotMatch(chooser, /onClick=\{onCreateEmail\} disabled=\{editorUnavailable\}/);
   assert.match(chooser, /role="alertdialog"/);
 });
+
+test("the owner log uses the forensic grid and account-level multi-device presence", async () => {
+  const audit = await readFile(new URL("../src/AuditLog.jsx", import.meta.url), "utf8");
+  assert.match(audit, /Forensic Data Grid/);
+  assert.match(audit, /data\.accounts\?\.length/);
+  assert.match(audit, /online_session_count/);
+  assert.match(audit, /signed_out_session_count/);
+  assert.match(audit, /requestSequenceRef/);
+  assert.match(audit, /scrollIntoView/);
+});

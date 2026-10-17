@@ -1316,9 +1316,12 @@ export function App({ currentUser }) {
   if (auditLogOpen) {
     return (
       <>
-        <ArchiveWorkspace user={currentUser} onLogout={signOut} isLoggingOut={signingOut}>
-          <AuditLog onClose={closeAuditLog} />
-        </ArchiveWorkspace>
+        <AuditLog
+          onClose={closeAuditLog}
+          user={currentUser}
+          onLogout={signOut}
+          isLoggingOut={signingOut}
+        />
         {notice && <div className="toast" role="status" aria-live="polite">{notice}</div>}
       </>
     );
