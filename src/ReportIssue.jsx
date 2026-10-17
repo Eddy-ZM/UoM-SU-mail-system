@@ -23,9 +23,13 @@ function ErrorMessage({ id, children }) {
 export function ReportIssue() {
   const [form, setForm] = useState(INITIAL_FORM);
   const [status, setStatus] = useState({ kind: "idle" });
+  const [urgentHelpOpen, setUrgentHelpOpen] = useState(true);
   const startedAt = useRef(Date.now());
   const formHeadingRef = useRef(null);
   const successRef = useRef(null);
+  const urgentHelpDialogRef = useRef(null);
+  const urgentHelpTitleRef = useRef(null);
+  const urgentHelpReturnFocusRef = useRef(null);
 
   useEffect(() => {
     const previousTitle = document.title;
@@ -43,6 +47,44 @@ export function ReportIssue() {
       });
     });
   }, [status.kind]);
+
+  useEffect(() => {
+    if (!urgentHelpOpen) return;
+    window.requestAnimationFrame(() => urgentHelpTitleRef.current?.focus({ preventScroll: true }));
+  }, [urgentHelpOpen]);
+
+  const handleUrgentHelpKeyDown = (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      return;
+    }
+    if (event.key !== "Tab") return;
+
+    const focusable = urgentHelpDialogRef.current?.querySelectorAll("a[href], button:not([disabled])");
+    if (!focusable?.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && (document.activeElement === first || document.activeElement === urgentHelpTitleRef.current)) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+
+  const acknowledgeUrgentHelp = () => {
+    setUrgentHelpOpen(false);
+    window.requestAnimationFrame(() => {
+      (urgentHelpReturnFocusRef.current || formHeadingRef.current)?.focus({ preventScroll: true });
+      urgentHelpReturnFocusRef.current = null;
+    });
+  };
+
+  const reopenUrgentHelp = (event) => {
+    urgentHelpReturnFocusRef.current = event.currentTarget;
+    setUrgentHelpOpen(true);
+  };
 
   const update = (field, value) => {
     setForm((current) => ({
@@ -89,7 +131,7 @@ export function ReportIssue() {
 
   return (
     <main className="report-page">
-      <article className="report-shell">
+      <article className="report-shell" aria-hidden={urgentHelpOpen ? "true" : undefined} inert={urgentHelpOpen ? "" : undefined}>
         <header className="report-masthead">
           <div className="report-text-identity" aria-label="Department of Chemistry Student Representatives">
             <span>Student representative service</span>
@@ -303,18 +345,11 @@ export function ReportIssue() {
           </section>
 
           <aside className="report-guidance" aria-labelledby="report-guidance-title">
-            <section className="report-urgent">
-              <p>NEED URGENT HELP?</p>
-              <h2 id="report-guidance-title">This is not an emergency service.</h2>
-              <p>Reports are not monitored continuously. For an emergency or immediate risk, use the University&apos;s emergency support information.</p>
-              <a href="https://www.studentsupport.manchester.ac.uk/taking-care/emergency/" target="_blank" rel="noreferrer">Open emergency support information</a>
-            </section>
-
-            <section className="report-guidance-section">
-              <p>SPECIALIST REPORTING</p>
-              <h2>Harassment, discrimination or safeguarding</h2>
-              <p>The University&apos;s Report + Support service offers anonymous reporting and contact with a trained advisor.</p>
-              <a href="https://www.reportandsupport.manchester.ac.uk/" target="_blank" rel="noreferrer">Open Report + Support</a>
+            <section className="report-guidance-section report-support-reminder">
+              <p>IMPORTANT SUPPORT</p>
+              <h2 id="report-guidance-title">Need urgent or specialist help?</h2>
+              <p>Review the emergency and specialist reporting options before submitting if you are unsure which service to use.</p>
+              <button type="button" onClick={reopenUrgentHelp}>View support options</button>
             </section>
 
             <section className="report-guidance-section">
@@ -340,6 +375,45 @@ export function ReportIssue() {
           <p>&copy; {new Date().getFullYear()} University of Manchester Student Representatives Team &middot; Technical support provided by Ziwen M.</p>
         </footer>
       </article>
+
+      {urgentHelpOpen && (
+        <div className="report-safety-overlay">
+          <section
+            ref={urgentHelpDialogRef}
+            className="report-safety-dialog"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="report-safety-title"
+            aria-describedby="report-safety-description"
+            onKeyDown={handleUrgentHelpKeyDown}
+          >
+            <div className="report-safety-section report-safety-urgent">
+              <p className="report-safety-kicker">NEED URGENT HELP?</p>
+              <h2 ref={urgentHelpTitleRef} id="report-safety-title" tabIndex="-1">This is not an emergency service.</h2>
+              <p id="report-safety-description">
+                Reports are not monitored continuously. For an emergency or immediate risk, use the University&apos;s emergency support information.
+              </p>
+              <a href="https://www.studentsupport.manchester.ac.uk/taking-care/emergency/" target="_blank" rel="noreferrer">
+                Open emergency support information
+              </a>
+            </div>
+
+            <div className="report-safety-section report-safety-specialist">
+              <p className="report-safety-kicker">SPECIALIST REPORTING</p>
+              <h2>Harassment, discrimination or safeguarding</h2>
+              <p>The University&apos;s Report + Support service offers anonymous reporting and contact with a trained advisor.</p>
+              <a href="https://www.reportandsupport.manchester.ac.uk/" target="_blank" rel="noreferrer">Open Report + Support</a>
+            </div>
+
+            <div className="report-safety-action">
+              <p>Please confirm that you understand this reporting form is not monitored as an emergency service.</p>
+              <button type="button" onClick={acknowledgeUrgentHelp}>
+                I understand — continue to the report form
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </main>
   );
 }

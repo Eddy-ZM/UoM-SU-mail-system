@@ -329,7 +329,8 @@
 }
 
 .report-confirmation a,
-.report-guidance a { color: #5a1678; font-weight: 800; text-underline-offset: 3px; }
+.report-guidance a,
+.report-safety-dialog a { color: #5a1678; font-weight: 800; text-underline-offset: 3px; }
 
 .report-honeypot {
   position: absolute;
@@ -366,10 +367,13 @@
 
 .report-form > button:focus-visible,
 .report-success > button:focus-visible,
+.report-support-reminder button:focus-visible,
+.report-safety-action button:focus-visible,
 .report-choice:focus-within,
 .report-confirmation:focus-within,
 .report-footer a:focus-visible,
-.report-guidance a:focus-visible {
+.report-guidance a:focus-visible,
+.report-safety-dialog a:focus-visible {
   outline: 3px solid rgba(102, 0, 153, .25);
   outline-offset: 3px;
 }
@@ -443,6 +447,117 @@
 .report-guidance-section li strong { color: #332b36; font-size: 11px; }
 .report-guidance-section li small { color: #746b78; font-size: 10.5px; line-height: 1.45; }
 
+.report-support-reminder { padding-top: 0; border-top: 4px solid #c58c20; }
+
+.report-support-reminder button {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 2px;
+  padding: 10px 13px;
+  color: #5a1678;
+  cursor: pointer;
+  background: #fff;
+  border: 1px solid #7d3b9d;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.report-support-reminder button:hover { background: #f6eff9; }
+
+.report-safety-overlay {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: clamp(18px, 4vw, 48px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: rgba(28, 22, 31, .78);
+}
+
+.report-safety-dialog {
+  width: min(610px, 100%);
+  margin: auto;
+  overflow: hidden;
+  color: #2e2731;
+  background: #fff;
+  border: 1px solid #cfc8d2;
+  border-top: 6px solid #c58c20;
+  box-shadow: 0 28px 80px rgba(18, 13, 20, .34);
+}
+
+.report-safety-section {
+  padding: clamp(26px, 5vw, 40px);
+}
+
+.report-safety-urgent { background: #fbf6ed; }
+
+.report-safety-specialist { border-top: 1px solid #d6d0d9; }
+
+.report-safety-kicker {
+  margin: 0 0 18px;
+  color: #660099;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 2px;
+}
+
+.report-safety-urgent .report-safety-kicker { color: #8a5a00; }
+
+.report-safety-dialog h2 {
+  max-width: 500px;
+  margin: 0;
+  color: #251f27;
+  font-size: clamp(26px, 5vw, 34px);
+  line-height: 1.15;
+  letter-spacing: -.55px;
+}
+
+.report-safety-dialog h2:focus { outline: none; }
+
+.report-safety-dialog p:not(.report-safety-kicker) {
+  margin: 18px 0;
+  color: #655b69;
+  font-size: 15px;
+  line-height: 1.62;
+}
+
+.report-safety-dialog a {
+  display: inline-block;
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.report-safety-action {
+  display: grid;
+  gap: 16px;
+  padding: 22px clamp(26px, 5vw, 40px) 26px;
+  background: #f3f1f4;
+  border-top: 1px solid #d6d0d9;
+}
+
+.report-safety-action p:not(.report-safety-kicker) {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.report-safety-action button {
+  min-height: 52px;
+  padding: 13px 18px;
+  color: #fff;
+  cursor: pointer;
+  background: #660099;
+  border: 1px solid #660099;
+  border-radius: 2px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.report-safety-action button:hover { background: #52007b; border-color: #52007b; }
+
 .report-footer {
   display: grid;
   grid-template-columns: 1.5fr auto;
@@ -489,6 +604,12 @@
   .report-footer nav { align-items: flex-start; flex-direction: column; gap: 5px; }
   .report-footer p { grid-column: 1; }
   .report-success dl div { grid-template-columns: 1fr; gap: 4px; }
+  .report-safety-overlay { place-items: start center; padding: 14px; }
+  .report-safety-section { padding: 25px 24px; }
+  .report-safety-action { padding: 20px 24px 24px; }
+  .report-safety-dialog h2 { font-size: 27px; }
+  .report-safety-dialog p:not(.report-safety-kicker) { font-size: 14px; }
+  .report-safety-dialog a { font-size: 16px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
