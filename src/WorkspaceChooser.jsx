@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import "./workspace-chooser.css";
 
 function displayNameFor(user) {
@@ -71,6 +71,43 @@ function WorkspaceFooter() {
   );
 }
 
+export function MobileEditorDialog({ open, onClose, hasDraft = false }) {
+  const closeRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const previousFocus = document.activeElement;
+    closeRef.current?.focus({ preventScroll: true });
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("keydown", closeOnEscape);
+      previousFocus?.focus?.({ preventScroll: true });
+    };
+  }, [onClose, open]);
+
+  if (!open) return null;
+  return (
+    <div className="mobile-editor-dialog" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <section role="alertdialog" aria-modal="true" aria-labelledby="mobile-editor-dialog-title" aria-describedby="mobile-editor-dialog-description">
+        <span className="mobile-editor-dialog__eyebrow">Desktop browser required</span>
+        <h2 id="mobile-editor-dialog-title">Email editor requires a desktop browser</h2>
+        <p id="mobile-editor-dialog-description">
+          The visual email editor is disabled on mobile-sized screens to prevent an unstable editing session.
+          {hasDraft ? " Your saved draft remains unchanged and can be continued from a desktop browser." : " Open this service on a desktop browser to create the email."}
+        </p>
+        <div className="mobile-editor-dialog__facts">
+          <span>Available here</span>
+          <strong>Archives, student reports and public services</strong>
+        </div>
+        <button ref={closeRef} type="button" onClick={onClose}>Understood</button>
+      </section>
+    </div>
+  );
+}
+
 export function WorkspaceChooser({
   user,
   draft = null,
@@ -111,17 +148,17 @@ export function WorkspaceChooser({
               </dl>
             </div>
             <div className="workspace-draft__actions">
-              <button type="button" onClick={onResumeDraft} disabled={editorUnavailable}>Continue editing</button>
+              <button type="button" onClick={onResumeDraft}>Continue editing</button>
               <button type="button" onClick={onDeleteDraft}>Delete draft</button>
             </div>
           </section>
         )}
 
         <div className="workspace-chooser__actions" aria-label="Representative workspace actions">
-          <button className="workspace-action workspace-action--primary" type="button" onClick={onCreateEmail} disabled={editorUnavailable}>
+          <button className="workspace-action workspace-action--primary" type="button" onClick={onCreateEmail}>
             <span className="workspace-action__copy">
               <strong>Create a new email</strong>
-              <small>{editorUnavailable ? "Email editing is available on desktop browsers only." : "Start with an approved announcement template."}</small>
+              <small>{editorUnavailable ? "Tap to review the desktop-browser requirement." : "Start with an approved announcement template."}</small>
             </span>
           </button>
 

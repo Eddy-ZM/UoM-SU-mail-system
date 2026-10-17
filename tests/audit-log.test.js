@@ -41,5 +41,7 @@ test("the workspace gates the editor on mobile and exposes owner-only system log
   ]);
   assert.match(app, /mobileEditorBlocked && canModifyDraft\(editorPhase\)/);
   assert.match(chooser, /user\?\.capabilities\?\.auditLog/);
-  assert.match(chooser, /Email editing is available on desktop browsers only/);
+  assert.match(chooser, /Tap to review the desktop-browser requirement/);
+  assert.doesNotMatch(chooser, /onClick=\{onCreateEmail\} disabled=\{editorUnavailable\}/);
+  assert.match(chooser, /role="alertdialog"/);
 });

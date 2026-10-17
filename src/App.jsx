@@ -38,7 +38,7 @@ import {
   readDraft,
   saveDraft,
 } from "./draftStore.js";
-import { ArchivedSession, ArchiveProgress, ArchiveWorkspace, WorkspaceChooser } from "./WorkspaceChooser.jsx";
+import { ArchivedSession, ArchiveProgress, ArchiveWorkspace, MobileEditorDialog, WorkspaceChooser } from "./WorkspaceChooser.jsx";
 import {
   EDITOR_PHASE,
   archiveReceiptFromExport,
@@ -221,6 +221,7 @@ export function App({ currentUser }) {
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [reportArchiveOpen, setReportArchiveOpen] = useState(false);
   const [auditLogOpen, setAuditLogOpen] = useState(false);
+  const [mobileEditorPromptOpen, setMobileEditorPromptOpen] = useState(false);
   const [archiveInitialId, setArchiveInitialId] = useState("");
   const [exportBusy, setExportBusy] = useState("");
   const [signingOut, setSigningOut] = useState(false);
@@ -379,7 +380,7 @@ export function App({ currentUser }) {
 
   const resumeSavedDraft = useCallback(() => {
     if (mobileEditorBlocked) {
-      showNotice("Email editing is available on desktop browsers only");
+      setMobileEditorPromptOpen(true);
       return;
     }
     if (!savedDraft || isDraftExpired(savedDraft)) {
@@ -411,7 +412,7 @@ export function App({ currentUser }) {
 
   const startNewEmail = useCallback(() => {
     if (mobileEditorBlocked) {
-      showNotice("Email editing is available on desktop browsers only");
+      setMobileEditorPromptOpen(true);
       return;
     }
     if (savedDraft && !window.confirm("Create a new email and delete the current saved draft?")) return;
@@ -478,12 +479,14 @@ export function App({ currentUser }) {
   }, []);
 
   const closeAuditLog = useCallback(() => setAuditLogOpen(false), []);
+  const closeMobileEditorPrompt = useCallback(() => setMobileEditorPromptOpen(false), []);
 
   const returnHome = useCallback(() => {
     setArchiveReceipt(null);
     setArchiveOpen(false);
     setReportArchiveOpen(false);
     setAuditLogOpen(false);
+    setMobileEditorPromptOpen(false);
     setArchiveInitialId("");
     setEditorPhase(EDITOR_PHASE.CHOOSER);
   }, []);
@@ -1371,6 +1374,7 @@ export function App({ currentUser }) {
           onLogout={signOut}
           isLoggingOut={signingOut}
         />
+        <MobileEditorDialog open={mobileEditorPromptOpen} onClose={closeMobileEditorPrompt} hasDraft={Boolean(savedDraft)} />
         {notice && <div className="toast" role="status" aria-live="polite">{notice}</div>}
       </>
     );
@@ -1394,6 +1398,7 @@ export function App({ currentUser }) {
           onLogout={signOut}
           isLoggingOut={signingOut}
         />
+        <MobileEditorDialog open={mobileEditorPromptOpen} onClose={closeMobileEditorPrompt} hasDraft={Boolean(savedDraft)} />
         {notice && <div className="toast" role="status" aria-live="polite">{notice}</div>}
       </>
     );
