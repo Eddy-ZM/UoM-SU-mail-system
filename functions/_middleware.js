@@ -27,7 +27,7 @@ export async function onRequest(context) {
   if (
     requestUrl.hostname === "uom-su-mail-system.pages.dev"
     && (context.request.method === "GET" || context.request.method === "HEAD")
-    && (requestUrl.pathname === "/report" || requestUrl.pathname === "/report/")
+    && ["/report", "/report/", "/questionnaire/already-submitted", "/questionnaire/already-submitted/"].includes(requestUrl.pathname)
   ) {
     const canonicalUrl = new URL(`${requestUrl.pathname}${requestUrl.search}`, CANONICAL_ORIGIN);
     return new Response(null, {

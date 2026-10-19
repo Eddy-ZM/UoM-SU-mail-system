@@ -23,6 +23,7 @@ When implementing from a selected generated mock, treat that image as the source
 - After service entry is allowed, `feature:uom-su-mail-system:full_access` controls the principal workspace and archive features. It is allowed by default for active users; an explicit Deny must still show the English full-screen restriction notice and block archive viewing and creation.
 - `ziwen.mu@chemvault.science` and `test@chemvault.science` remain bootstrap allowed accounts for service entry. An explicit deny still wins. Never copy or couple service-entry decisions into the content-access permission.
 - Public verification, reporting and privacy pages remain directly usable without a pre-release notice.
+- The public duplicate-questionnaire redirect target is `/questionnaire/already-submitted/`. It must remain usable without sign-in, explain that no further response is required, state that the page itself collects no answers, and provide team-contact and privacy links.
 - Access notices must follow the restrained institutional-document language used by the verification and privacy pages: formal masthead, left-aligned hierarchy, explicit service-status rows, and no generic alert-card decoration.
 - Display the visible `Restricted` state in red and describe it as an account-level access restriction, not a pre-release state.
 - During the brief permission check or login redirect, show only the verification animation. Do not flash the institutional masthead, explanatory copy, footer, or privacy link before the final access state is known.

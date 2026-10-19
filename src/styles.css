@@ -3253,6 +3253,86 @@ button {
   line-height: 1.68;
 }
 
+.duplicate-submission-status {
+  margin: 0;
+  border-top: 1px solid #d3cdd6;
+}
+
+.duplicate-submission-status div {
+  display: grid;
+  grid-template-columns: 125px minmax(0, 1fr);
+  gap: 18px;
+  padding: 14px 0;
+  border-bottom: 1px solid #d3cdd6;
+}
+
+.duplicate-submission-status dt,
+.duplicate-submission-status dd {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.duplicate-submission-status dt {
+  color: #756b79;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.duplicate-submission-status dd {
+  color: #302832;
+  font-weight: 750;
+}
+
+.duplicate-submission-note {
+  margin: 24px 0 0;
+  padding: 17px 19px;
+  color: #4d4451;
+  background: #f6f3f7;
+  border-left: 4px solid #660099;
+  font-size: 13px;
+  line-height: 1.62;
+}
+
+.duplicate-submission-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 13px 20px;
+  margin-top: 25px;
+}
+
+.duplicate-submission-actions a {
+  color: #660099;
+  font-size: 13px;
+  font-weight: 800;
+  text-underline-offset: 3px;
+}
+
+.duplicate-submission-actions .duplicate-submission-primary {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 0 22px;
+  color: #fff;
+  background: #660099;
+  border: 1px solid #660099;
+  border-radius: 2px;
+  text-decoration: none;
+}
+
+.duplicate-submission-actions .duplicate-submission-primary:hover {
+  background: #52007b;
+  border-color: #52007b;
+}
+
+.duplicate-submission-actions a:focus-visible {
+  outline: 3px solid rgba(102, 0, 153, .22);
+  outline-offset: 3px;
+}
+
 .verify-form {
   display: grid;
   gap: 20px;
@@ -3666,6 +3746,11 @@ button {
   }
 
   .verify-result-details div {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+
+  .duplicate-submission-status div {
     grid-template-columns: 1fr;
     gap: 3px;
   }

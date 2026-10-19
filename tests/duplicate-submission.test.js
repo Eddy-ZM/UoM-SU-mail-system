@@ -1,0 +1,21 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+
+test("the public duplicate-submission page gives a clear non-collection notice", async () => {
+  const [page, main] = await Promise.all([
+    readFile(new URL("../src/DuplicateSubmission.jsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/main.jsx", import.meta.url), "utf8"),
+  ]);
+  assert.match(main, /\/questionnaire\/already-submitted/);
+  assert.match(main, /<DuplicateSubmission \/>/);
+  assert.match(page, /This questionnaire has already been submitted/);
+  assert.match(page, /No further submission is required/);
+  assert.match(page, /does not change or replace your earlier response/);
+  assert.match(page, /Information collected here<\/dt><dd>None/);
+  assert.match(page, /Contact the team/);
+  assert.match(page, /Privacy Notice/);
+  assert.doesNotMatch(page, /<img/i);
+  assert.doesNotMatch(page, /<form/i);
+  assert.doesNotMatch(page, /returnTo/);
+});

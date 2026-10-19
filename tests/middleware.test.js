@@ -77,6 +77,29 @@ test("public issue reporting page and submit API bypass the editor authenticatio
   }
 });
 
+test("the duplicate questionnaire notice is public without an editor sign-in", async () => {
+  for (const path of ["/questionnaire/already-submitted", "/questionnaire/already-submitted/"]) {
+    let nextCalls = 0;
+    const response = await onRequest({
+      request: new Request(`https://mailsys.uomsu.chemvault.science${path}`),
+      env: {},
+      next: async () => { nextCalls += 1; return new Response("duplicate submission notice"); },
+    });
+    assert.equal(nextCalls, 1);
+    assert.equal(await response.text(), "duplicate submission notice");
+  }
+});
+
+test("the pages.dev duplicate questionnaire address redirects to the canonical public domain", async () => {
+  const response = await onRequest({
+    request: new Request("https://uom-su-mail-system.pages.dev/questionnaire/already-submitted/?source=form"),
+    env: {},
+    next: async () => new Response("must not render"),
+  });
+  assert.equal(response.status, 308);
+  assert.equal(response.headers.get("location"), "https://mailsys.uomsu.chemvault.science/questionnaire/already-submitted/?source=form");
+});
+
 test("the legacy pages.dev report address redirects to the canonical public domain", async () => {
   let nextCalls = 0;
   const response = await onRequest({

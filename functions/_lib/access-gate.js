@@ -21,6 +21,7 @@ export function isPublicRequestPath(pathname) {
   if (pathname === "/agreement/privacy-notice" || pathname === "/agreement/privacy-notice/") return true;
   if (pathname === "/verify" || pathname === "/verify/" || pathname === "/api/verification") return true;
   if (pathname === "/report" || pathname === "/report/" || pathname === "/api/reports") return true;
+  if (pathname === "/questionnaire/already-submitted" || pathname === "/questionnaire/already-submitted/") return true;
   if (pathname === "/api/outlook/callback") return true;
   if (pathname === "/api/access/logout") return true;
   if (pathname.startsWith("/assets/")) return true;

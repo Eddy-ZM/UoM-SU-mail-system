@@ -5,12 +5,14 @@ import { App } from "./App.jsx";
 import { PrivacyNotice } from "./PrivacyNotice.jsx";
 import { ReportIssue } from "./ReportIssue.jsx";
 import { VerifyMessage } from "./VerifyMessage.jsx";
+import { DuplicateSubmission } from "./DuplicateSubmission.jsx";
 import "./styles.css";
 
 const path = window.location.pathname.replace(/\/+$/, "") || "/";
 const isPrivacyNotice = path === "/agreement/privacy-notice";
 const isVerificationPage = path === "/verify";
 const isReportPage = path === "/report";
+const isDuplicateSubmissionPage = path === "/questionnaire/already-submitted";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -20,10 +22,12 @@ createRoot(document.getElementById("root")).render(
         ? <VerifyMessage />
         : isReportPage
           ? <ReportIssue />
-        : (
-          <AccessGate>
-            {(currentUser) => <App currentUser={currentUser} />}
-          </AccessGate>
-        )}
+          : isDuplicateSubmissionPage
+            ? <DuplicateSubmission />
+            : (
+              <AccessGate>
+                {(currentUser) => <App currentUser={currentUser} />}
+              </AccessGate>
+            )}
   </React.StrictMode>,
 );
