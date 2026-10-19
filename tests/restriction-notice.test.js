@@ -36,6 +36,7 @@ test("public services open directly without a pre-release acknowledgement", () =
   assert.match(mainSource, /\? <VerifyMessage \/>/);
   assert.match(mainSource, /\? <ReportIssue \/>/);
   assert.match(mainSource, /\? <DuplicateSubmission \/>/);
+  assert.match(mainSource, /\? <QuestionnaireThankYou \/>/);
   assert.doesNotMatch(mainSource, /PublicAccessNotice/);
   assert.doesNotMatch(mainSource, /pre-release/i);
 });

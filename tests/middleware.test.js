@@ -100,6 +100,27 @@ test("the pages.dev duplicate questionnaire address redirects to the canonical p
   assert.equal(response.headers.get("location"), "https://mailsys.uomsu.chemvault.science/questionnaire/already-submitted/?source=form");
 });
 
+test("the questionnaire thank-you page is public and uses the canonical domain", async () => {
+  for (const path of ["/questionnaire/thank-you", "/questionnaire/thank-you/"]) {
+    let nextCalls = 0;
+    const response = await onRequest({
+      request: new Request(`https://mailsys.uomsu.chemvault.science${path}`),
+      env: {},
+      next: async () => { nextCalls += 1; return new Response("questionnaire thank you"); },
+    });
+    assert.equal(nextCalls, 1);
+    assert.equal(await response.text(), "questionnaire thank you");
+  }
+
+  const redirected = await onRequest({
+    request: new Request("https://uom-su-mail-system.pages.dev/questionnaire/thank-you/?source=form"),
+    env: {},
+    next: async () => new Response("must not render"),
+  });
+  assert.equal(redirected.status, 308);
+  assert.equal(redirected.headers.get("location"), "https://mailsys.uomsu.chemvault.science/questionnaire/thank-you/?source=form");
+});
+
 test("the legacy pages.dev report address redirects to the canonical public domain", async () => {
   let nextCalls = 0;
   const response = await onRequest({

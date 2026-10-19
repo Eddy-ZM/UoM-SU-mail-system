@@ -24,6 +24,7 @@ When implementing from a selected generated mock, treat that image as the source
 - `ziwen.mu@chemvault.science` and `test@chemvault.science` remain bootstrap allowed accounts for service entry. An explicit deny still wins. Never copy or couple service-entry decisions into the content-access permission.
 - Public verification, reporting and privacy pages remain directly usable without a pre-release notice.
 - The public duplicate-questionnaire redirect target is `/questionnaire/already-submitted/`. It must remain usable without sign-in, explain that no further response is required, state that the page itself collects no answers, and provide team-contact and privacy links.
+- The successful Year 2 Chemistry Student Voice Survey ending redirects to `/questionnaire/thank-you/`. Keep it public, text-only and non-collecting; acknowledge receipt, show survey reference `2610281`, explain the review-and-feedback process, and provide team-contact and privacy links.
 - Access notices must follow the restrained institutional-document language used by the verification and privacy pages: formal masthead, left-aligned hierarchy, explicit service-status rows, and no generic alert-card decoration.
 - Display the visible `Restricted` state in red and describe it as an account-level access restriction, not a pre-release state.
 - During the brief permission check or login redirect, show only the verification animation. Do not flash the institutional masthead, explanatory copy, footer, or privacy link before the final access state is known.

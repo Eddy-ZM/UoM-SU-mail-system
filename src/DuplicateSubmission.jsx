@@ -36,17 +36,17 @@ export function DuplicateSubmission() {
               A previous response has already been recorded for this questionnaire. You do not need to submit another response.
             </p>
 
-            <dl className="duplicate-submission-status" aria-label="Submission status">
+            <dl className="questionnaire-response-status" aria-label="Submission status">
               <div><dt>Status</dt><dd>Previous response detected</dd></div>
               <div><dt>Next step</dt><dd>No further submission is required</dd></div>
             </dl>
 
-            <p className="duplicate-submission-note">
+            <p className="questionnaire-response-note">
               Visiting this page does not change or replace your earlier response. If you believe this notice is incorrect, or you need to update something you submitted, contact the Student Representatives Team.
             </p>
 
-            <div className="duplicate-submission-actions">
-              <a className="duplicate-submission-primary" href={`mailto:${CONTACT_EMAIL}?subject=Questionnaire%20submission%20query`}>Contact the team</a>
+            <div className="questionnaire-response-actions">
+              <a className="questionnaire-response-primary" href={`mailto:${CONTACT_EMAIL}?subject=Questionnaire%20submission%20query`}>Contact the team</a>
               <a href="/agreement/privacy-notice/">Read the Privacy Notice</a>
             </div>
           </section>
