@@ -24,7 +24,8 @@ function formatHeaderDate(value = new Date()) {
 }
 
 function actionLabel(value = "") {
-  return value.split(".").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" · ");
+  const acronyms = { eml: "EML", html: "HTML" };
+  return value.split(/[._]/).map((part) => acronyms[part] || part.charAt(0).toUpperCase() + part.slice(1)).join(" · ");
 }
 
 function categoryLabel(value = "") {
@@ -45,6 +46,10 @@ function sessionState(session, now = Date.now()) {
 
 function deviceLabel(session) {
   return session.client_class === "mobile" ? "Mobile · browser" : "Desktop · browser";
+}
+
+function emailTarget(event) {
+  return event.target_type === "email" && event.target_id ? event.target_id : "—";
 }
 
 function timeRangeStart(range, now = Date.now()) {
@@ -230,15 +235,15 @@ export function AuditLog({ onClose, user, onLogout, isLoggingOut = false }) {
             <label><span>Actor</span><select value={draftFilters.actorEmail} onChange={(event) => setDraftFilters((current) => ({ ...current, actorEmail: event.target.value }))}><option value="">All users</option>{actors.map(([email, name]) => <option value={email} key={email}>{name}</option>)}</select></label>
             <label><span>Status</span><select value={draftFilters.outcome} onChange={(event) => setDraftFilters((current) => ({ ...current, outcome: event.target.value }))}><option value="">All status</option><option value="success">Success</option><option value="failure">Failure</option><option value="denied">Denied</option></select></label>
             <button type="button" className="audit-filters__more" onClick={() => setMoreFiltersOpen((open) => !open)}><FunnelSimple />More filters</button><button type="submit" className="audit-filters__apply">Apply</button>
-            {moreFiltersOpen ? <label className="audit-filters__search"><span>Search account or action</span><div><MagnifyingGlass /><input value={draftFilters.query} onChange={(event) => setDraftFilters((current) => ({ ...current, query: event.target.value }))} placeholder="Email, name or action" autoFocus /><button type="button" aria-label="Close search" onClick={() => setMoreFiltersOpen(false)}><X /></button></div></label> : null}
+            {moreFiltersOpen ? <label className="audit-filters__search"><span>Search account, action or email target</span><div><MagnifyingGlass /><input value={draftFilters.query} onChange={(event) => setDraftFilters((current) => ({ ...current, query: event.target.value }))} placeholder="Name, action, Message No. or Archive ID" autoFocus /><button type="button" aria-label="Close search" onClick={() => setMoreFiltersOpen(false)}><X /></button></div></label> : null}
             {Object.values(appliedFilters).some((value) => value && value !== "7d") ? <div className="audit-filters__active"><span>Custom filters applied</span><button type="button" onClick={clearFilters}>Clear all</button></div> : null}
           </form>
 
           {error ? <p className="audit-console__error" role="alert">{error}</p> : null}
           <div className="audit-grid">
             <section className="audit-grid__events" aria-label="Recorded audit events">
-              <div className="audit-grid__scroll"><table><thead><tr><th>Time <ArrowDown /></th><th>Actor</th><th>Category</th><th>Action</th><th>Device</th><th>Path</th><th>Status</th><th><span className="sr-only">Inspect</span></th></tr></thead><tbody>
-                {data.events.map((event) => { const linkedSession = data.sessions.find((session) => session.id === event.session_id); const eventDevice = linkedSession || (event.client_class ? { client_class: event.client_class } : null); return <tr key={event.id} className={event.id === selectedId ? "is-selected" : ""} onClick={() => selectEvent(event.id)}><td>{formatDate(event.occurred_at)}</td><td>{event.actor_name || event.actor_email}</td><td>{categoryLabel(event.category)}</td><td>{actionLabel(event.action)}</td><td>{eventDevice ? deviceLabel(eventDevice) : "—"}</td><td><code>{event.request_path || "—"}</code></td><td><StatusBadge value={event.outcome} /></td><td><button type="button" aria-label={`Inspect ${actionLabel(event.action)}`} onClick={(clickEvent) => { clickEvent.stopPropagation(); selectEvent(event.id); }}><ArrowSquareOut /></button></td></tr>; })}
+              <div className="audit-grid__scroll"><table><thead><tr><th>Time <ArrowDown /></th><th>Actor</th><th>Category</th><th>Action</th><th>Email target</th><th>Device</th><th>Path</th><th>Status</th><th><span className="sr-only">Inspect</span></th></tr></thead><tbody>
+                {data.events.map((event) => { const linkedSession = data.sessions.find((session) => session.id === event.session_id); const eventDevice = linkedSession || (event.client_class ? { client_class: event.client_class } : null); return <tr key={event.id} className={event.id === selectedId ? "is-selected" : ""} onClick={() => selectEvent(event.id)}><td>{formatDate(event.occurred_at)}</td><td>{event.actor_name || event.actor_email}</td><td>{categoryLabel(event.category)}</td><td>{actionLabel(event.action)}</td><td className="audit-grid__target"><code>{emailTarget(event)}</code></td><td>{eventDevice ? deviceLabel(eventDevice) : "—"}</td><td><code>{event.request_path || "—"}</code></td><td><StatusBadge value={event.outcome} /></td><td><button type="button" aria-label={`Inspect ${actionLabel(event.action)}`} onClick={(clickEvent) => { clickEvent.stopPropagation(); selectEvent(event.id); }}><ArrowSquareOut /></button></td></tr>; })}
               </tbody></table>{status === "loading" && !data.events.length ? <p className="audit-console__empty">Loading secure activity records…</p> : null}{!data.events.length && status !== "loading" ? <p className="audit-console__empty">No events match these filters.</p> : null}</div>
               <footer className="audit-grid__pagination"><span>{firstRecord}–{lastRecord} of {data.pagination.total} records</span><span>Rows per page <strong>{PAGE_SIZE}</strong><button type="button" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}><CaretLeft /></button><b>{Math.floor(offset / PAGE_SIZE) + 1}</b><button type="button" disabled={offset + PAGE_SIZE >= data.pagination.total} onClick={() => setOffset(offset + PAGE_SIZE)}><CaretRight /></button></span></footer>
             </section>
@@ -247,7 +252,7 @@ export function AuditLog({ onClose, user, onLogout, isLoggingOut = false }) {
               <header><h2>Event details</h2><button type="button" aria-label="Close event details" onClick={() => setSelectedId("")}><X /></button></header>
               {!selected ? <div className="audit-inspector__empty"><h3>Select an event</h3><p>Account, status and technical request details will appear here.</p></div> : <>
                 <section className="audit-inspector__summary"><div><StatusBadge value={selected.outcome} /><h3>{actionLabel(selected.action)}</h3><time>{formatDate(selected.occurred_at)}</time></div><ArrowSquareOut /></section>
-                <dl className="audit-inspector__fields"><div><dt>Actor</dt><dd>{selected.actor_name || "Name unavailable"}<small>{selected.actor_email}</small></dd></div><div><dt>Category</dt><dd>{categoryLabel(selected.category)}</dd></div><div><dt>Action</dt><dd>{actionLabel(selected.action)}</dd></div><div><dt>Status</dt><dd><StatusBadge value={selected.outcome} /></dd></div><div><dt>Request</dt><dd>{selected.request_method || "—"} {selected.request_path || "—"}</dd></div><div><dt>HTTP status</dt><dd>{selected.http_status || "Not applicable"}</dd></div><div><dt>Role</dt><dd>{selected.actor_role || "Not recorded"}</dd></div><div><dt>Event ID</dt><dd><code>{selected.id}</code></dd></div></dl>
+                <dl className="audit-inspector__fields"><div><dt>Actor</dt><dd>{selected.actor_name || "Name unavailable"}<small>{selected.actor_email}</small></dd></div><div><dt>Category</dt><dd>{categoryLabel(selected.category)}</dd></div><div><dt>Action</dt><dd>{actionLabel(selected.action)}</dd></div><div><dt>Email target</dt><dd><code>{emailTarget(selected)}</code></dd></div><div><dt>Archive ID</dt><dd><code>{selected.metadata?.archiveId || "—"}</code></dd></div><div><dt>Status</dt><dd><StatusBadge value={selected.outcome} /></dd></div><div><dt>Request</dt><dd>{selected.request_method || "—"} {selected.request_path || "—"}</dd></div><div><dt>HTTP status</dt><dd>{selected.http_status || "Not applicable"}</dd></div><div><dt>Role</dt><dd>{selected.actor_role || "Not recorded"}</dd></div><div><dt>Event ID</dt><dd><code>{selected.id}</code></dd></div></dl>
                 <section className="audit-inspector__sessions"><header><h3>Session and devices</h3><span><StatusBadge value={selectedAccount?.active > 0 ? "online" : "inactive"} /></span></header><p><span>Active sessions <strong>{selectedAccount?.active || 0}</strong></span><span>Signed-out sessions <strong>{selectedAccount?.signedOut || 0}</strong></span></p><div>{selectedSessions.map((session) => { const state = sessionState(session); const DeviceIcon = session.client_class === "mobile" ? DeviceMobile : Monitor; return <article className={state === "Online" ? "is-online" : ""} key={session.id}><DeviceIcon /><div><strong>{deviceLabel(session)}</strong><small>{state === "Online" ? `Started ${formatDate(session.started_at)}` : `${state} ${formatDate(session.ended_at || session.last_seen_at)}`}</small></div><StatusBadge value={state} /></article>; })}</div></section>
                 <section className="audit-inspector__raw"><button type="button" aria-expanded={rawOpen} onClick={() => setRawOpen((open) => !open)}>Raw event data <CaretDown /></button>{rawOpen ? <pre>{JSON.stringify({ ...selected, metadata: selected.metadata || {} }, null, 2)}</pre> : null}</section>
               </>}

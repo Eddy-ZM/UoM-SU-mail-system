@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { isAllowedClientAuditAction, isAuditOwner } from "../functions/_lib/audit-store.js";
 import { onRequestGet as readAuditLog } from "../functions/api/admin/audit-logs.js";
+import { clientAuditTarget, onRequestPost as writeAuditEvent } from "../functions/api/audit/events.js";
 
 test("only the configured owner identity is recognised for audit access", () => {
   assert.equal(isAuditOwner({ email: "ZIWEN.MU@CHEMVAULT.SCIENCE" }), true);
@@ -22,8 +23,57 @@ test("the audit API denies other full-access users before touching D1", async ()
 
 test("client audit actions are an explicit non-content allowlist", () => {
   assert.equal(isAllowedClientAuditAction("composer.opened"), true);
+  assert.equal(isAllowedClientAuditAction("email.archived"), true);
+  assert.equal(isAllowedClientAuditAction("email.eml_downloaded"), true);
   assert.equal(isAllowedClientAuditAction("email.body.changed"), false);
   assert.equal(isAllowedClientAuditAction("custom free text"), false);
+});
+
+test("email audit targets accept only protected message numbers and UUID archive ids", () => {
+  const valid = clientAuditTarget({
+    action: "email.archived",
+    messageNumber: "CHEM-SR-A1B2C3D4",
+    archiveId: "123e4567-e89b-42d3-a456-426614174000",
+    automatic: true,
+    subject: "must not be retained",
+    html: "<p>must not be retained</p>",
+  });
+  assert.deepEqual(valid, {
+    targetType: "email",
+    targetId: "CHEM-SR-A1B2C3D4",
+    metadata: { archiveId: "123e4567-e89b-42d3-a456-426614174000", automatic: true },
+  });
+  assert.equal(clientAuditTarget({ action: "email.archived", messageNumber: "student subject" }), null);
+  assert.equal(clientAuditTarget({ action: "email.archived", messageNumber: "CHEM-SR-A1B2C3D4", archiveId: "not-an-id" }), null);
+  assert.equal(clientAuditTarget({ action: "email.archived" }), null);
+});
+
+test("the client audit endpoint stores identifiers without email content", async () => {
+  const calls = [];
+  const db = { prepare(sql) { return { bind(...bindings) { calls.push({ sql, bindings }); return { run: async () => ({ meta: { changes: 1 } }) }; } }; } };
+  const response = await writeAuditEvent({
+    request: new Request("https://mailsys.uomsu.chemvault.science/api/audit/events", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        eventId: "event-1",
+        sessionId: "session-1",
+        action: "email.archived",
+        messageNumber: "CHEM-SR-A1B2C3D4",
+        archiveId: "123e4567-e89b-42d3-a456-426614174000",
+        subject: "Private title",
+        html: "<p>Private body</p>",
+      }),
+    }),
+    data: { mailAccess: { kind: "allowed", user: { id: "user-1", email: "rep@example.com" } } },
+    env: { ARCHIVE_DB: db },
+  });
+  assert.equal(response.status, 202);
+  const stored = calls[0].bindings;
+  assert.equal(stored[8], "email");
+  assert.equal(stored[9], "CHEM-SR-A1B2C3D4");
+  assert.deepEqual(JSON.parse(stored[14]), { archiveId: "123e4567-e89b-42d3-a456-426614174000" });
+  assert.equal(stored.some((value) => String(value).includes("Private")), false);
 });
 
 test("audit migration creates indexed sessions and immutable event rows", async () => {
@@ -54,4 +104,7 @@ test("the owner log uses the forensic grid and account-level multi-device presen
   assert.match(audit, /signed_out_session_count/);
   assert.match(audit, /requestSequenceRef/);
   assert.match(audit, /scrollIntoView/);
+  assert.match(audit, /Email target/);
+  assert.match(audit, /Archive ID/);
+  assert.match(audit, /Message No\. or Archive ID/);
 });

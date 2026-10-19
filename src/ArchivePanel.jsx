@@ -3,6 +3,7 @@ import { canReopenArchive } from "../shared/archive-reopen.js";
 import { downloadFilenameForMessageNumber } from "../shared/email-integrity.js";
 import { loadArchive, loadArchives, removeArchive } from "./archiveClient.js";
 import { copyHtmlForOutlook } from "./outlookClipboard.js";
+import { recordAuditAction } from "./auditClient.js";
 
 const OPERATION_LABELS = {
   copy_html: "Copy HTML",
@@ -87,6 +88,7 @@ export function ArchivePanel({
         throw new Error("The 24-hour read-only reopening window has expired.");
       }
       setSelected(archive);
+      recordAuditAction("email.archive_opened", { messageNumber: archive.messageNumber, archiveId: archive.id });
       setStatus("ready");
     } catch (caught) {
       setSelected(null);
@@ -131,6 +133,7 @@ export function ArchivePanel({
     setActionMessage("");
     try {
       await removeArchive(record.id);
+      recordAuditAction("email.archive_deleted", { messageNumber: record.messageNumber, archiveId: record.id });
       if (selected?.id === record.id) setSelected(null);
       await refresh(query);
     } catch (caught) {
@@ -139,7 +142,7 @@ export function ArchivePanel({
     }
   };
 
-  const runReadOnlyAction = async (action, successMessage) => {
+  const runReadOnlyAction = async (action, successMessage, auditAction) => {
     if (!selected || !canReopenArchive(selected)) {
       setSelected(null);
       setError("The 24-hour read-only reopening window has expired.");
@@ -149,6 +152,7 @@ export function ArchivePanel({
     setError("");
     try {
       await action();
+      recordAuditAction(auditAction, { messageNumber: selected.messageNumber, archiveId: selected.id });
       setActionMessage(successMessage);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "The browser blocked this operation. Please try again.");
@@ -236,9 +240,9 @@ export function ArchivePanel({
               <button type="button" onClick={() => setSelected(null)}>Hide preview</button>
             </div>
             <div className="archive-detail-actions" aria-label="Read-only archived email actions">
-              <button type="button" onClick={() => void runReadOnlyAction(() => copyHtmlForOutlook(selected.html), "Outlook email copied from the immutable backup.")}>Copy for Outlook</button>
-              <button type="button" onClick={() => void runReadOnlyAction(() => copyHtmlSource(selected.html), "HTML copied from the immutable backup.")}>Copy HTML</button>
-              <button type="button" onClick={() => void runReadOnlyAction(() => downloadArchivedHtml(selected), "HTML downloaded from the immutable backup.")}>Download HTML</button>
+              <button type="button" onClick={() => void runReadOnlyAction(() => copyHtmlForOutlook(selected.html), "Outlook email copied from the immutable backup.", "email.outlook_copied")}>Copy for Outlook</button>
+              <button type="button" onClick={() => void runReadOnlyAction(() => copyHtmlSource(selected.html), "HTML copied from the immutable backup.", "email.html_copied")}>Copy HTML</button>
+              <button type="button" onClick={() => void runReadOnlyAction(() => downloadArchivedHtml(selected), "HTML downloaded from the immutable backup.", "email.html_downloaded")}>Download HTML</button>
             </div>
             <p className="archive-readonly-notice">Read-only access expires {formatDate(selected.reopenExpiresAt)}. Copying or downloading does not create or modify an archive record.</p>
             <dl>

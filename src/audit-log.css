@@ -141,7 +141,7 @@
 .audit-grid { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 10px; align-items: stretch; }
 .audit-grid__events { min-width: 0; display: grid; grid-template-rows: minmax(500px, 1fr) auto; overflow: hidden; }
 .audit-grid__scroll { min-width: 0; overflow: auto; }
-.audit-grid table { width: 100%; min-width: 850px; border-collapse: collapse; font-size: 10px; }
+.audit-grid table { width: 100%; min-width: 1010px; border-collapse: collapse; font-size: 10px; }
 .audit-grid th { position: sticky; z-index: 1; top: 0; height: 34px; padding: 0 11px; color: #30344b; background: #f4f5f8; border-right: 1px solid var(--audit-line); border-bottom: 1px solid var(--audit-line); text-align: left; white-space: nowrap; }
 .audit-grid th svg { width: 12px; vertical-align: middle; }
 .audit-grid td { height: 31px; max-width: 190px; padding: 5px 11px; color: #454a60; border-right: 1px solid var(--audit-line); border-bottom: 1px solid #e9ebf1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -149,6 +149,7 @@
 .audit-grid tbody tr:hover { background: #faf9ff; }
 .audit-grid tbody tr.is-selected { background: #eeebff; }
 .audit-grid td code { font: inherit; }
+.audit-grid td.audit-grid__target code { color: #4d1269; font-weight: 700; }
 .audit-grid td:last-child button { width: 24px; height: 24px; display: grid; place-items: center; padding: 0; color: #464b61; background: transparent; border: 0; }
 .audit-grid td:last-child svg { width: 15px; }
 .audit-grid__pagination { min-height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 13px; color: #575c71; border-top: 1px solid var(--audit-line); font-size: 10px; }

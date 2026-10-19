@@ -6,6 +6,14 @@ const CLIENT_ACTIONS = new Set([
   "composer.resumed",
   "draft.deleted",
   "archive.opened",
+  "email.archived",
+  "email.html_copied",
+  "email.outlook_copied",
+  "email.eml_downloaded",
+  "email.html_downloaded",
+  "email.archive_opened",
+  "email.archive_deleted",
+  "outlook.authorisation_started",
   "reports.opened",
   "audit.opened",
 ]);
@@ -127,9 +135,9 @@ export async function listAuditLog(db, params = {}) {
   const conditions = [];
   const bindings = [];
   if (q) {
-    conditions.push("(LOWER(actor_email) LIKE ? OR LOWER(actor_name) LIKE ? OR LOWER(action) LIKE ?)");
+    conditions.push("(LOWER(actor_email) LIKE ? OR LOWER(actor_name) LIKE ? OR LOWER(action) LIKE ? OR LOWER(COALESCE(target_id, '')) LIKE ? OR LOWER(COALESCE(json_extract(metadata_json, '$.archiveId'), '')) LIKE ?)");
     const like = `%${q.replaceAll("%", "\\%").replaceAll("_", "\\_")}%`;
-    bindings.push(like, like, like);
+    bindings.push(like, like, like, like, like);
   }
   if (action) { conditions.push("action = ?"); bindings.push(action); }
   if (["success", "failure", "denied"].includes(outcome)) { conditions.push("outcome = ?"); bindings.push(outcome); }

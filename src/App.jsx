@@ -69,6 +69,14 @@ const FONT_FAMILIES = ["Arial", "Verdana", "Tahoma", "Georgia", "Times New Roman
 const FONT_SIZES = [12, 14, 16, 18, 22, 28, 34];
 const DEFAULT_ACTIVE_FORMATS = { bold: false, italic: false, underline: false, alignment: "left" };
 
+function emailAuditTarget(emailHtml) {
+  try {
+    return { messageNumber: extractMessageNumber(emailHtml) };
+  } catch {
+    return {};
+  }
+}
+
 function commandState(doc, command) {
   try {
     return doc.queryCommandState(command);
@@ -394,7 +402,7 @@ export function App({ currentUser }) {
       return;
     }
     setEditorPhase(EDITOR_PHASE.EDITING);
-    recordAuditAction("composer.resumed");
+    recordAuditAction("composer.resumed", emailAuditTarget(savedDraft.html));
     setSyncState("Saved draft reopened");
   }, [draftOwner, mobileEditorBlocked, savedDraft, showNotice]);
 
@@ -406,7 +414,7 @@ export function App({ currentUser }) {
       // Removing the in-memory record still hides the draft for this session.
     }
     setSavedDraft(null);
-    recordAuditAction("draft.deleted");
+    recordAuditAction("draft.deleted", emailAuditTarget(savedDraft.html));
     showNotice("Draft deleted");
   }, [draftOwner, savedDraft, showNotice]);
 
@@ -435,7 +443,7 @@ export function App({ currentUser }) {
     setSavedDraft(null);
     setSyncState("Visual and HTML are in sync");
     setEditorPhase(EDITOR_PHASE.EDITING);
-    recordAuditAction("composer.opened");
+    recordAuditAction("composer.opened", { messageNumber: identified.messageNumber });
     try {
       clearDraft(localStorage, draftOwner);
     } catch {
@@ -1155,6 +1163,7 @@ export function App({ currentUser }) {
       setSavedDraft(null);
       setSyncState(`Immutable backup ${archived.archive.id} created`);
       setEditorPhase(EDITOR_PHASE.ARCHIVED);
+      recordAuditAction("email.archived", { messageNumber: archived.messageNumber, archiveId: archived.archive.id });
       return archived;
     } catch (error) {
       archiveLockRef.current = false;
@@ -1172,6 +1181,7 @@ export function App({ currentUser }) {
     if (!archived) return;
     try {
       await navigator.clipboard.writeText(archived.html);
+      recordAuditAction("email.html_copied", { messageNumber: archived.messageNumber, archiveId: archived.archive.id });
       showNotice(`HTML copied and archived as ${archived.messageNumber}`);
     } catch {
       const textarea = document.createElement("textarea");
@@ -1189,6 +1199,7 @@ export function App({ currentUser }) {
       showNotice(copied
         ? `HTML copied and archived as ${archived.messageNumber}`
         : "Copy was blocked. Open the read-only archive copy and try again.");
+      if (copied) recordAuditAction("email.html_copied", { messageNumber: archived.messageNumber, archiveId: archived.archive.id });
     }
   };
 
@@ -1202,6 +1213,7 @@ export function App({ currentUser }) {
     if (editorPhase !== EDITOR_PHASE.ARCHIVED || archiveReceipt?.operation !== "copy_outlook") return;
     try {
       await copyHtmlForOutlook(html);
+      recordAuditAction("email.outlook_copied", { messageNumber: archiveReceipt.messageNumber, archiveId: archiveReceipt.archiveId });
       showNotice(`Outlook email copied from backup ${archiveReceipt.messageNumber}`);
     } catch {
       showNotice("Copy was blocked. Select Copy to Outlook and allow clipboard access.");
@@ -1219,6 +1231,7 @@ export function App({ currentUser }) {
         messageNumber: archiveReceipt.messageNumber,
       });
       downloadOutlookDraft(draft);
+      recordAuditAction("email.eml_downloaded", { messageNumber: archiveReceipt.messageNumber, archiveId: archiveReceipt.archiveId, automatic });
       showNotice(automatic
         ? "Outlook draft downloaded. Open the .eml file to continue."
         : "Outlook draft downloaded again. Open the .eml file to continue.");
@@ -1254,8 +1267,9 @@ export function App({ currentUser }) {
   const createArchivedOutlookDraft = useCallback(() => {
     if (editorPhase !== EDITOR_PHASE.ARCHIVED || outlookGraphState !== "available" || !archiveReceipt?.archiveId) return;
     openOutlookDraftAuthorisation(archiveReceipt.archiveId);
+    recordAuditAction("outlook.authorisation_started", { messageNumber: archiveReceipt.messageNumber, archiveId: archiveReceipt.archiveId });
     showNotice("Complete Microsoft 365 authorisation in the new window. Outlook will open the draft when it is ready.");
-  }, [archiveReceipt?.archiveId, editorPhase, outlookGraphState, showNotice]);
+  }, [archiveReceipt?.archiveId, archiveReceipt?.messageNumber, editorPhase, outlookGraphState, showNotice]);
 
   const downloadHtml = async () => {
     const archived = await prepareArchivedExport("download_html");
@@ -1269,6 +1283,7 @@ export function App({ currentUser }) {
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
+    recordAuditAction("email.html_downloaded", { messageNumber: archived.messageNumber, archiveId: archived.archive.id });
     showNotice(`HTML downloaded and archived as ${archived.messageNumber}`);
   };
 

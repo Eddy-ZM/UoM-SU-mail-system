@@ -49,12 +49,17 @@ export function useAuditSession() {
   }, []);
 }
 
-export function recordAuditAction(action) {
+export function recordAuditAction(action, target = {}) {
   try {
+    const safeTarget = {};
+    if (typeof target.messageNumber === "string") safeTarget.messageNumber = target.messageNumber;
+    if (typeof target.archiveId === "string") safeTarget.archiveId = target.archiveId;
+    if (typeof target.automatic === "boolean") safeTarget.automatic = target.automatic;
     void post("/api/audit/events", {
       eventId: randomId(),
       sessionId: sessionId(),
       action,
+      ...safeTarget,
     }, true).catch(() => undefined);
   } catch {
     // Audit telemetry is deliberately non-blocking.

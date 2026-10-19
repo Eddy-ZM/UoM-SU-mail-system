@@ -94,6 +94,19 @@ test("audit listing applies forensic filters and returns account-level presence 
   assert.match(eventQuery.sql, /AS client_class/);
 });
 
+test("audit search includes message numbers and archive ids", async () => {
+  const fixture = statementRecorder((call, method) => {
+    if (method === "first") return { total: 0 };
+    return { results: [] };
+  });
+  await listAuditLog(fixture.db, { q: "CHEM-SR-A1B2C3D4" });
+  const count = fixture.calls.find((call) => /SELECT COUNT\(\*\)/.test(call.sql));
+  assert.match(count.sql, /target_id/);
+  assert.match(count.sql, /json_extract\(metadata_json, '\$\.archiveId'\)/);
+  assert.equal(count.bindings.length, 5);
+  assert.equal(count.bindings.every((value) => value === "%chem-sr-a1b2c3d4%"), true);
+});
+
 test("the owner audit API forwards forensic query filters to the store", async () => {
   const fixture = statementRecorder((call, method) => {
     if (method === "first") return { total: 0 };
