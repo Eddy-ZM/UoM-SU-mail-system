@@ -15,6 +15,9 @@ test("the public questionnaire ending thanks students without collecting another
   assert.match(page, /Your response has been recorded/);
   assert.match(page, /Contact the team/);
   assert.match(page, /Privacy notice/);
+  assert.match(page, />Close<\/button>/);
+  assert.match(page, /window\.close\(\)/);
+  assert.match(page, /You can close it manually/);
   assert.match(page, /Technical support provided by Ziwen M\./);
   assert.match(page, /CheckCircle/);
   assert.doesNotMatch(page, /CHEM-SR-|Verification code/i);

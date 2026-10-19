@@ -1,14 +1,21 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { CheckCircle } from "@phosphor-icons/react";
 
 const CONTACT_EMAIL = "rongzhi.wu@student.manchester.ac.uk";
 
 export function QuestionnaireThankYou() {
+  const [showCloseHint, setShowCloseHint] = useState(false);
+
   useEffect(() => {
     const previousTitle = document.title;
     document.title = "Thank you for your feedback | Manchester Chemistry Student Representatives";
     return () => { document.title = previousTitle; };
   }, []);
+
+  const closePage = () => {
+    window.close();
+    window.setTimeout(() => setShowCloseHint(true), 150);
+  };
 
   return (
     <main className="questionnaire-complete-page">
@@ -32,9 +39,15 @@ export function QuestionnaireThankYou() {
         </p>
 
         <div className="questionnaire-complete-actions">
-          <a className="questionnaire-complete-primary" href={`mailto:${CONTACT_EMAIL}?subject=Year%202%20Chemistry%20Student%20Voice%20Survey`}>Contact the team</a>
+          <button className="questionnaire-complete-primary" type="button" onClick={closePage}>Close</button>
+          <a href={`mailto:${CONTACT_EMAIL}?subject=Year%202%20Chemistry%20Student%20Voice%20Survey`}>Contact the team</a>
           <a href="/agreement/privacy-notice/">Privacy notice</a>
         </div>
+        {showCloseHint && (
+          <p className="questionnaire-complete-close-hint" role="status">
+            Your browser did not close this tab. You can close it manually.
+          </p>
+        )}
       </section>
 
       <footer className="questionnaire-complete-footer">

@@ -3457,6 +3457,7 @@ button {
   color: #660099;
   font-size: 16px;
   font-weight: 600;
+  text-decoration: underline;
   text-underline-offset: 4px;
 }
 
@@ -3471,7 +3472,8 @@ button {
   background: #660099;
   border: 1px solid #660099;
   border-radius: 3px;
-  text-decoration: none;
+  font: 600 16px/1.4 "Segoe UI", Arial, Helvetica, sans-serif;
+  cursor: pointer;
   transition: background-color 160ms ease, border-color 160ms ease;
 }
 
@@ -3480,9 +3482,18 @@ button {
   border-color: #510079;
 }
 
-.questionnaire-complete-actions a:focus-visible {
+.questionnaire-complete-actions a:focus-visible,
+.questionnaire-complete-actions button:focus-visible {
   outline: 3px solid rgba(102, 0, 153, .24);
   outline-offset: 4px;
+}
+
+.questionnaire-complete-close-hint {
+  max-width: 520px;
+  margin: 20px 0 0;
+  color: #686673;
+  font-size: 14px;
+  line-height: 1.55;
 }
 
 .questionnaire-complete-footer {
