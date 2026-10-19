@@ -15,6 +15,7 @@ test("the public duplicate-submission page gives a clear non-collection notice",
   assert.match(page, /does not collect questionnaire answers/);
   assert.match(page, /Contact the team/);
   assert.match(page, /Privacy notice/);
+  assert.match(page, /questionnaire-complete-links/);
   assert.match(page, />Close<\/button>/);
   assert.match(page, /window\.close\(\)/);
   assert.match(page, /You can close it manually/);

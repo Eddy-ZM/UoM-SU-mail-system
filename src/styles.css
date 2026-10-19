@@ -3448,9 +3448,17 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-wrap: wrap;
-  gap: 18px 30px;
+  flex-direction: column;
+  gap: 15px;
   margin-top: 62px;
+}
+
+.questionnaire-complete-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px 30px;
 }
 
 .questionnaire-complete-actions a {
@@ -3514,30 +3522,93 @@ button {
 }
 
 @media (min-width: 601px) {
+  .questionnaire-complete-page {
+    height: 100svh;
+    min-height: 650px;
+    overflow: hidden;
+  }
+
+  .questionnaire-complete-header {
+    flex: 0 0 auto;
+    padding: clamp(20px, 3.2vh, 34px) 0 10px;
+  }
+
+  .questionnaire-complete-header p {
+    margin-bottom: 7px;
+  }
+
+  .questionnaire-complete-content {
+    flex: 1 1 auto;
+    justify-content: center;
+    min-height: 0;
+    padding: clamp(10px, 1.8vh, 18px) 0;
+  }
+
+  .questionnaire-complete-icon {
+    width: clamp(72px, 9vh, 92px);
+    height: clamp(72px, 9vh, 92px);
+  }
+
+  .questionnaire-complete-content h1 {
+    margin-top: clamp(14px, 2.2vh, 22px);
+    font-size: clamp(38px, 4.2vw, 54px);
+  }
+
+  .questionnaire-complete-lead {
+    margin-top: clamp(10px, 1.5vh, 15px);
+    font-size: clamp(18px, 1.7vw, 22px);
+  }
+
+  .questionnaire-complete-survey {
+    margin-top: clamp(16px, 2.3vh, 23px);
+    padding: clamp(11px, 1.6vh, 16px) 20px;
+  }
+
+  .questionnaire-complete-next {
+    margin-top: clamp(14px, 2vh, 20px);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .questionnaire-complete-actions {
+    gap: clamp(9px, 1.3vh, 13px);
+    margin-top: clamp(15px, 2.2vh, 22px);
+  }
+
+  .questionnaire-complete-actions .questionnaire-complete-primary {
+    min-height: 44px;
+    padding: 9px 27px;
+  }
+
+  .questionnaire-complete-footer {
+    flex: 0 0 auto;
+    padding: clamp(9px, 1.4vh, 14px) 0 clamp(10px, 1.6vh, 16px);
+  }
+
   .duplicate-submission-page .questionnaire-complete-content {
-    padding-top: clamp(42px, 5.5vh, 58px);
-    padding-bottom: 22px;
+    padding-top: clamp(8px, 1.4vh, 14px);
+    padding-bottom: clamp(8px, 1.4vh, 14px);
   }
 
   .duplicate-submission-page .questionnaire-complete-content h1 {
-    margin-top: 34px;
-    font-size: clamp(40px, 4.5vw, 60px);
+    margin-top: clamp(12px, 1.8vh, 18px);
+    font-size: clamp(36px, 3.8vw, 50px);
   }
 
   .duplicate-submission-page .questionnaire-complete-lead {
-    margin-top: 22px;
+    margin-top: clamp(8px, 1.2vh, 12px);
   }
 
   .duplicate-submission-page .questionnaire-complete-survey {
-    margin-top: 38px;
+    margin-top: clamp(13px, 1.8vh, 18px);
   }
 
   .duplicate-submission-page .questionnaire-complete-next {
-    margin-top: 38px;
+    margin-top: clamp(12px, 1.6vh, 16px);
   }
 
   .duplicate-submission-page .questionnaire-complete-actions {
-    margin-top: 46px;
+    margin-top: clamp(13px, 1.8vh, 18px);
   }
 }
 
@@ -3588,8 +3659,11 @@ button {
 
   .questionnaire-complete-actions {
     width: 100%;
-    flex-direction: column;
     margin-top: 34px;
+  }
+
+  .questionnaire-complete-links {
+    gap: 14px 24px;
   }
 
   .questionnaire-complete-actions .questionnaire-complete-primary {
