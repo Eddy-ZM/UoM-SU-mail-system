@@ -3513,6 +3513,34 @@ button {
   line-height: 1.6;
 }
 
+@media (min-width: 601px) {
+  .duplicate-submission-page .questionnaire-complete-content {
+    padding-top: clamp(42px, 5.5vh, 58px);
+    padding-bottom: 22px;
+  }
+
+  .duplicate-submission-page .questionnaire-complete-content h1 {
+    margin-top: 34px;
+    font-size: clamp(40px, 4.5vw, 60px);
+  }
+
+  .duplicate-submission-page .questionnaire-complete-lead {
+    margin-top: 22px;
+  }
+
+  .duplicate-submission-page .questionnaire-complete-survey {
+    margin-top: 38px;
+  }
+
+  .duplicate-submission-page .questionnaire-complete-next {
+    margin-top: 38px;
+  }
+
+  .duplicate-submission-page .questionnaire-complete-actions {
+    margin-top: 46px;
+  }
+}
+
 @media (max-width: 600px) {
   .questionnaire-complete-page {
     border-top-width: 5px;

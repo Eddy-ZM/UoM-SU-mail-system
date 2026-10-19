@@ -12,9 +12,14 @@ test("the public duplicate-submission page gives a clear non-collection notice",
   assert.match(page, /This questionnaire has already been submitted/);
   assert.match(page, /No further submission is required/);
   assert.match(page, /does not change or replace your earlier response/);
-  assert.match(page, /Information collected here<\/dt><dd>None/);
+  assert.match(page, /does not collect questionnaire answers/);
   assert.match(page, /Contact the team/);
-  assert.match(page, /Privacy Notice/);
+  assert.match(page, /Privacy notice/);
+  assert.match(page, />Close<\/button>/);
+  assert.match(page, /window\.close\(\)/);
+  assert.match(page, /You can close it manually/);
+  assert.match(page, /Technical support provided by Ziwen M\./);
+  assert.match(page, /CheckCircle/);
   assert.doesNotMatch(page, /<img/i);
   assert.doesNotMatch(page, /<form/i);
   assert.doesNotMatch(page, /returnTo/);
