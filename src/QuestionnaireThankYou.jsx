@@ -42,7 +42,6 @@ export function QuestionnaireThankYou() {
           <button className="questionnaire-complete-primary" type="button" onClick={closePage}>Close</button>
           <div className="questionnaire-complete-links">
             <a href={`mailto:${CONTACT_EMAIL}?subject=Year%202%20Chemistry%20Student%20Voice%20Survey`}>Contact the team</a>
-            <a href="/agreement/privacy-notice/">Privacy notice</a>
           </div>
         </div>
         {showCloseHint && (

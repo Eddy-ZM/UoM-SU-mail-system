@@ -42,7 +42,6 @@ export function DuplicateSubmission() {
           <button className="questionnaire-complete-primary" type="button" onClick={closePage}>Close</button>
           <div className="questionnaire-complete-links">
             <a href={`mailto:${CONTACT_EMAIL}?subject=Questionnaire%20submission%20query`}>Contact the team</a>
-            <a href="/agreement/privacy-notice/">Privacy notice</a>
           </div>
         </div>
         {showCloseHint && (

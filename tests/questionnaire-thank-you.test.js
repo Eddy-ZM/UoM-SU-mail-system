@@ -14,7 +14,7 @@ test("the public questionnaire ending thanks students without collecting another
   assert.match(page, /Survey reference 2610281/);
   assert.match(page, /Your response has been recorded/);
   assert.match(page, /Contact the team/);
-  assert.match(page, /Privacy notice/);
+  assert.doesNotMatch(page, /Privacy notice|agreement\/privacy-notice/i);
   assert.match(page, /questionnaire-complete-links/);
   assert.match(page, />Close<\/button>/);
   assert.match(page, /window\.close\(\)/);
